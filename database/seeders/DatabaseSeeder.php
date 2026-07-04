@@ -15,11 +15,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Sistema privado de un solo administrador: no se registran usuarios
+        // públicamente, así que este es el único punto donde se crea acceso.
+        // firstOrCreate (no updateOrCreate) para no pisar la contraseña si ya
+        // fue cambiada desde el perfil. Configura ADMIN_EMAIL/ADMIN_PASSWORD
+        // en .env antes de sembrar en producción.
+        User::firstOrCreate(
+            ['email' => env('ADMIN_EMAIL', 'admin@leufusur.cl')],
+            [
+                'name' => env('ADMIN_NAME', 'Jonathan Rodríguez'),
+                'password' => env('ADMIN_PASSWORD', 'password'),
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }
