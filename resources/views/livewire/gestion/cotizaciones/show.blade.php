@@ -127,10 +127,19 @@ $duplicar = function () {
                     @if ($cotizacion->cliente->nombre_empresa)
                         <div><dt class="text-gray-500">Empresa</dt><dd class="text-gray-900">{{ $cotizacion->cliente->nombre_empresa }}</dd></div>
                     @endif
-                    <div><dt class="text-gray-500">Email</dt><dd class="text-gray-900">{{ $cotizacion->cliente->email }}</dd></div>
-                    <div><dt class="text-gray-500">Teléfono</dt><dd class="text-gray-900">{{ $cotizacion->cliente->telefono }}</dd></div>
+                    @if ($cotizacion->cliente->giro)
+                        <div><dt class="text-gray-500">Giro</dt><dd class="text-gray-900">{{ $cotizacion->cliente->giro }}</dd></div>
+                    @endif
+                    @if ($cotizacion->cliente->email)
+                        <div><dt class="text-gray-500">Email</dt><dd class="text-gray-900">{{ $cotizacion->cliente->email }}</dd></div>
+                    @endif
+                    @if ($cotizacion->cliente->telefono)
+                        <div><dt class="text-gray-500">Teléfono</dt><dd class="text-gray-900">{{ $cotizacion->cliente->telefono }}</dd></div>
+                    @endif
                     <div><dt class="text-gray-500">RUT</dt><dd class="text-gray-900">{{ $cotizacion->cliente->rut_run }}</dd></div>
-                    <div><dt class="text-gray-500">Dirección</dt><dd class="text-gray-900">{{ $cotizacion->cliente->direccion }}</dd></div>
+                    @if ($cotizacion->cliente->direccion)
+                        <div><dt class="text-gray-500">Dirección</dt><dd class="text-gray-900">{{ $cotizacion->cliente->direccion }}</dd></div>
+                    @endif
                 </dl>
             </div>
 
@@ -160,6 +169,7 @@ $duplicar = function () {
                     <thead>
                         <tr>
                             <th class="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Descripción</th>
+                            <th class="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Unidad</th>
                             <th class="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Cantidad</th>
                             <th class="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Valor unitario</th>
                             <th class="py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Subtotal</th>
@@ -168,7 +178,13 @@ $duplicar = function () {
                     <tbody class="divide-y divide-gray-100">
                         @foreach ($cotizacion->lineas as $linea)
                             <tr wire:key="linea-detalle-{{ $linea->id }}">
-                                <td class="py-2 text-sm text-gray-900">{{ $linea->descripcion }}</td>
+                                <td class="py-2 text-sm text-gray-900">
+                                    {{ $linea->descripcion }}
+                                    @if ($linea->detalle_extendido)
+                                        <div class="prose prose-sm mt-1 max-w-none text-xs text-gray-500">{!! $linea->detalle_extendido !!}</div>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2 text-right text-sm text-gray-500">{{ $linea->unidad }}</td>
                                 <td class="px-3 py-2 text-right text-sm text-gray-500">{{ rtrim(rtrim($linea->cantidad, '0'), '.') }}</td>
                                 <td class="px-3 py-2 text-right text-sm text-gray-500">${{ number_format($linea->valor_unitario, 0, ',', '.') }}</td>
                                 <td class="py-2 text-right text-sm text-gray-900">${{ number_format($linea->subtotal_calculado, 0, ',', '.') }}</td>

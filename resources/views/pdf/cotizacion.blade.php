@@ -13,61 +13,84 @@
 
         .header-table {
             width: 100%;
-            border-bottom: 2px solid #0e7490;
+            border-bottom: 2px solid #1e3a5f;
             padding-bottom: 12px;
             margin-bottom: 16px;
         }
 
-        .empresa {
-            font-size: 18px;
+        {{-- Logotipo de texto: reemplazar por <img> cuando se disponga del archivo del logo. --}}
+        .logo-leufu {
+            font-size: 22px;
             font-weight: bold;
-            color: #0e7490;
+            color: #1e3a5f;
         }
 
-        .empresa-detalle {
+        .logo-sur {
+            color: #d97706;
+        }
+
+        .logo-tagline {
+            color: #d97706;
+            font-size: 9px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .cotizacion-titulo {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: right;
+            color: #1e3a5f;
+        }
+
+        .cotizacion-id {
+            text-align: right;
             color: #6b7280;
             font-size: 10px;
         }
 
-        .cotizacion-numero {
-            font-size: 16px;
-            font-weight: bold;
-            text-align: right;
-        }
-
-        .cotizacion-fechas {
-            text-align: right;
-            color: #6b7280;
+        .seccion-header {
+            background-color: #1e3a5f;
+            color: #ffffff;
+            padding: 5px 10px;
             font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
-        .seccion {
+        .seccion-caja {
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            padding: 10px;
             margin-bottom: 16px;
         }
 
-        .seccion-titulo {
-            font-size: 10px;
-            text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 4px;
+        .datos-tabla {
+            width: 100%;
         }
 
-        .cliente-nombre {
-            font-size: 13px;
-            font-weight: bold;
+        .datos-tabla td {
+            padding: 2px 0;
+            vertical-align: top;
+        }
+
+        .datos-label {
+            color: #6b7280;
+            width: 110px;
         }
 
         table.lineas {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 8px;
         }
 
         table.lineas th {
             background-color: #f3f4f6;
             text-align: left;
             padding: 6px 8px;
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
             color: #6b7280;
             border-bottom: 1px solid #e5e7eb;
@@ -76,10 +99,17 @@
         table.lineas td {
             padding: 6px 8px;
             border-bottom: 1px solid #f3f4f6;
+            vertical-align: top;
         }
 
         .num {
             text-align: right;
+        }
+
+        .detalle-extendido {
+            margin-top: 4px;
+            font-size: 9px;
+            color: #6b7280;
         }
 
         table.resumen {
@@ -89,23 +119,23 @@
         }
 
         table.resumen td {
-            padding: 3px 0;
+            padding: 3px 8px;
         }
 
         table.resumen .total td {
-            border-top: 1px solid #d1d5db;
+            background-color: #1e3a5f;
+            color: #ffffff;
             font-weight: bold;
             font-size: 13px;
-            padding-top: 6px;
+            padding-top: 8px;
+            padding-bottom: 8px;
         }
 
         .footer {
-            margin-top: 40px;
-            padding-top: 10px;
-            border-top: 1px solid #e5e7eb;
-            color: #9ca3af;
+            margin-top: 16px;
+            color: #6b7280;
             font-size: 9px;
-            text-align: center;
+            font-style: italic;
         }
     </style>
 </head>
@@ -113,52 +143,90 @@
 <body>
     <table class="header-table">
         <tr>
-            <td width="50%">
-                <div class="empresa">Leufu Sur SpA</div>
-                <div class="empresa-detalle">Servicios informáticos, seguridad y redes</div>
-                <div class="empresa-detalle">contacto@leufusur.cl &middot; +56 9 1234 5678</div>
+            <td width="55%">
+                <span class="logo-leufu">Leufu<span class="logo-sur">Sur</span></span>
+                <div class="logo-tagline">Soluciones Informáticas</div>
             </td>
-            <td width="50%">
-                <div class="cotizacion-numero">{{ $cotizacion->numero_cotizacion }}</div>
-                <div class="cotizacion-fechas">
-                    Emisión: {{ $cotizacion->fecha_emision->format('d-m-Y') }}<br>
-                    Vencimiento: {{ $cotizacion->fecha_vencimiento->format('d-m-Y') }}
-                    @if ($cotizacion->id_mercado_publico)
-                        <br>ID Mercado Público: {{ $cotizacion->id_mercado_publico }}
-                    @endif
-                </div>
+            <td width="45%">
+                <div class="cotizacion-titulo">COTIZACIÓN</div>
+                <div class="cotizacion-id">ID : {{ $cotizacion->numero_cotizacion }}</div>
             </td>
         </tr>
     </table>
 
-    <div class="seccion">
-        <div class="seccion-titulo">Cliente</div>
-        <div class="cliente-nombre">{{ $cotizacion->cliente->nombre }}</div>
-        @if ($cotizacion->cliente->nombre_empresa)
-            <div>{{ $cotizacion->cliente->nombre_empresa }}</div>
-        @endif
-        <div>{{ $cotizacion->cliente->rut_run }}</div>
-        <div>{{ $cotizacion->cliente->direccion }}</div>
-        <div>{{ $cotizacion->cliente->email }} &middot; {{ $cotizacion->cliente->telefono }}</div>
+    {{-- Datos del cliente --}}
+    <div class="seccion-header">Datos del Cliente</div>
+    <div class="seccion-caja">
+        <table class="datos-tabla">
+            <tr>
+                <td width="55%">
+                    <table class="datos-tabla">
+                        <tr>
+                            <td class="datos-label">Unidad Compradora</td>
+                            <td>{{ $cotizacion->cliente->nombre_empresa ?: $cotizacion->cliente->nombre }}</td>
+                        </tr>
+                        <tr>
+                            <td class="datos-label">RUT</td>
+                            <td>{{ $cotizacion->cliente->rut_run }}</td>
+                        </tr>
+                        <tr>
+                            <td class="datos-label">Giro</td>
+                            <td>{{ $cotizacion->cliente->giro ?: '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="datos-label">Dirección</td>
+                            <td>{{ $cotizacion->cliente->direccion ?: '—' }}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td width="45%">
+                    <table class="datos-tabla">
+                        <tr>
+                            <td class="datos-label">Fecha</td>
+                            <td>{{ $cotizacion->fecha_emision->format('d/m/Y') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="datos-label">Validez</td>
+                            <td>{{ $cotizacion->fecha_vencimiento->format('d/m/Y') }}</td>
+                        </tr>
+                        @if ($cotizacion->id_mercado_publico)
+                            <tr>
+                                <td class="datos-label">ID Mercado Público</td>
+                                <td>{{ $cotizacion->id_mercado_publico }}</td>
+                            </tr>
+                        @endif
+                    </table>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <div class="seccion">
-        <div class="seccion-titulo">{{ $cotizacion->descripcion }}</div>
-
+    {{-- Detalle de productos cotizados --}}
+    <div class="seccion-header">Detalle de Productos Cotizados</div>
+    <div class="seccion-caja">
         <table class="lineas">
             <thead>
                 <tr>
-                    <th>Descripción</th>
-                    <th class="num">Cantidad</th>
-                    <th class="num">Valor unitario</th>
-                    <th class="num">Subtotal</th>
+                    <th width="6%">Ítem</th>
+                    <th width="8%" class="num">Cant.</th>
+                    <th width="10%">Unidad</th>
+                    <th>Detalle</th>
+                    <th width="14%" class="num">Unitario</th>
+                    <th width="14%" class="num">Total</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($cotizacion->lineas as $linea)
+                @foreach ($cotizacion->lineas as $indice => $linea)
                     <tr>
-                        <td>{{ $linea->descripcion }}</td>
+                        <td>{{ $indice + 1 }}</td>
                         <td class="num">{{ rtrim(rtrim($linea->cantidad, '0'), '.') }}</td>
+                        <td>{{ $linea->unidad }}</td>
+                        <td>
+                            {{ $linea->descripcion }}
+                            @if ($linea->detalle_extendido)
+                                <div class="detalle-extendido">{!! $linea->detalle_extendido !!}</div>
+                            @endif
+                        </td>
                         <td class="num">${{ number_format($linea->valor_unitario, 0, ',', '.') }}</td>
                         <td class="num">${{ number_format($linea->subtotal_calculado, 0, ',', '.') }}</td>
                     </tr>
@@ -168,13 +236,13 @@
 
         <table class="resumen">
             <tr>
-                <td>Subtotal</td>
-                <td class="num">${{ number_format($cotizacion->subtotal_calculado, 0, ',', '.') }}</td>
+                <td>Total Neto</td>
+                <td class="num">${{ number_format($cotizacion->base_gravada_calculada, 0, ',', '.') }}</td>
             </tr>
             @if ((float) $cotizacion->descuento_porcentaje > 0)
                 <tr>
-                    <td>Base gravada (desc. {{ rtrim(rtrim($cotizacion->descuento_porcentaje, '0'), '.') }}%)</td>
-                    <td class="num">${{ number_format($cotizacion->base_gravada_calculada, 0, ',', '.') }}</td>
+                    <td>Descuento ({{ rtrim(rtrim($cotizacion->descuento_porcentaje, '0'), '.') }}%)</td>
+                    <td class="num">-${{ number_format($cotizacion->subtotal_calculado - $cotizacion->base_gravada_calculada, 0, ',', '.') }}</td>
                 </tr>
             @endif
             <tr>
@@ -182,14 +250,45 @@
                 <td class="num">${{ number_format($cotizacion->iva_calculado, 0, ',', '.') }}</td>
             </tr>
             <tr class="total">
-                <td>Total</td>
+                <td>TOTAL</td>
                 <td class="num">${{ number_format($cotizacion->total_calculado, 0, ',', '.') }}</td>
             </tr>
         </table>
     </div>
 
+    {{-- Datos de la empresa --}}
+    <div class="seccion-header">Datos de la Empresa</div>
+    <div class="seccion-caja">
+        <table class="datos-tabla">
+            <tr>
+                <td class="datos-label">Razón Social</td>
+                <td>Leufu Sur SpA</td>
+            </tr>
+            <tr>
+                <td class="datos-label">RUT</td>
+                <td>77.004.815-K</td>
+            </tr>
+            <tr>
+                <td class="datos-label">Giro</td>
+                <td>Servicios y Soluciones Tecnológicas</td>
+            </tr>
+            <tr>
+                <td class="datos-label">Dirección</td>
+                <td>Luis Sagardia #66 — Lebu</td>
+            </tr>
+            <tr>
+                <td class="datos-label">Correo</td>
+                <td>leufusurspa@icloud.com</td>
+            </tr>
+            <tr>
+                <td class="datos-label">Teléfono</td>
+                <td>+56 9 6247 1305</td>
+            </tr>
+        </table>
+    </div>
+
     <div class="footer">
-        Leufu Sur SpA &middot; Proveedor del Estado a través de Mercado Público &middot; Documento generado el {{ now()->format('d-m-Y H:i') }}
+        Validez de la oferta: {{ $cotizacion->fecha_vencimiento->format('d/m/Y') }}
     </div>
 </body>
 

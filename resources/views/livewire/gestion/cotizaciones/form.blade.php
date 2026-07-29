@@ -3,6 +3,7 @@
 use App\Enums\EstadoCotizacion;
 use App\Models\Cliente;
 use App\Models\Cotizacion;
+use Illuminate\Support\Str;
 
 use function Livewire\Volt\{computed, layout, mount, state, usesFileUploads};
 
@@ -20,7 +21,7 @@ state([
     'id_mercado_publico' => '',
     'nuevoAdjunto' => null,
     'lineas' => fn () => [
-        ['descripcion' => '', 'cantidad' => 1, 'valor_unitario' => 0],
+        ['_key' => (string) Str::uuid(), 'descripcion' => '', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0],
     ],
 ]);
 
@@ -45,7 +46,11 @@ mount(function (?Cotizacion $cotizacion = null) {
     $this->id_mercado_publico = $cotizacion->id_mercado_publico ?? '';
 
     $this->lineas = $cotizacion->lineas->map(fn ($linea) => [
+        '_key' => (string) Str::uuid(),
         'descripcion' => $linea->descripcion,
+        'detalle_extendido' => $linea->detalle_extendido ?? '',
+        'mostrar_detalle' => filled($linea->detalle_extendido),
+        'unidad' => $linea->unidad,
         'cantidad' => (float) $linea->cantidad,
         'valor_unitario' => (float) $linea->valor_unitario,
     ])->all();
@@ -77,7 +82,7 @@ $quitarCliente = function () {
 };
 
 $agregarLinea = function () {
-    $this->lineas[] = ['descripcion' => '', 'cantidad' => 1, 'valor_unitario' => 0];
+    $this->lineas[] = ['_key' => (string) Str::uuid(), 'descripcion' => '', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0];
 };
 
 $eliminarLinea = function (int $indice) {
@@ -123,6 +128,8 @@ $guardar = function () {
         'nuevoAdjunto' => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx', 'max:10240'],
         'lineas' => ['required', 'array', 'min:1'],
         'lineas.*.descripcion' => ['required', 'string', 'max:255'],
+        'lineas.*.detalle_extendido' => ['nullable', 'string', 'max:20000'],
+        'lineas.*.unidad' => ['required', 'string', 'max:20'],
         'lineas.*.cantidad' => ['required', 'numeric', 'min:0.01'],
         'lineas.*.valor_unitario' => ['required', 'numeric', 'min:0'],
     ]);
@@ -152,8 +159,22 @@ $guardar = function () {
     }
 
     foreach ($datos['lineas'] as $indice => $linea) {
+        $detalleExtendido = trim((string) ($linea['detalle_extendido'] ?? ''));
+
+        if ($detalleExtendido !== '') {
+            $detalleExtendido = strip_tags(
+                $detalleExtendido,
+                '<strong><b><em><i><a><ul><ol><li><br><div><h1><blockquote><pre>'
+            );
+            $detalleExtendido = preg_replace('/\son\w+\s*=\s*"[^"]*"/i', '', $detalleExtendido);
+            $detalleExtendido = preg_replace('/\son\w+\s*=\s*\'[^\']*\'/i', '', $detalleExtendido);
+            $detalleExtendido = preg_replace('/(href\s*=\s*["\'])\s*javascript:[^"\']*/i', '$1', $detalleExtendido);
+        }
+
         $cotizacion->lineas()->create([
             'descripcion' => $linea['descripcion'],
+            'detalle_extendido' => $detalleExtendido !== '' ? $detalleExtendido : null,
+            'unidad' => $linea['unidad'],
             'cantidad' => $linea['cantidad'],
             'valor_unitario' => $linea['valor_unitario'],
             'subtotal_calculado' => $linea['cantidad'] * $linea['valor_unitario'],
@@ -250,37 +271,58 @@ $guardar = function () {
 
                             <div class="mt-2 space-y-3">
                                 @foreach ($lineas as $indice => $linea)
-                                    <div class="flex flex-col gap-2 rounded-md border border-gray-200 p-3 sm:flex-row sm:items-start"
-                                        wire:key="linea-{{ $indice }}">
-                                        <div class="sm:flex-1">
-                                            <input type="text" wire:model="lineas.{{ $indice }}.descripcion"
-                                                placeholder="Descripción del producto o servicio"
-                                                class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                            <x-input-error :messages="$errors->get('lineas.'.$indice.'.descripcion')" class="mt-1" />
+                                    <div class="rounded-md border border-gray-200 p-3" wire:key="linea-{{ $linea['_key'] ?? $indice }}">
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
+                                            <div class="sm:flex-1">
+                                                <input type="text" wire:model="lineas.{{ $indice }}.descripcion"
+                                                    placeholder="Nombre del producto o servicio"
+                                                    class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                                <x-input-error :messages="$errors->get('lineas.'.$indice.'.descripcion')" class="mt-1" />
+                                                <label class="mt-1 flex items-center gap-1.5 text-xs text-gray-600">
+                                                    <input type="checkbox" wire:model.live="lineas.{{ $indice }}.mostrar_detalle"
+                                                        class="rounded border-gray-300 text-teal-600 shadow-sm focus:ring-teal-500">
+                                                    Agregar detalle
+                                                </label>
+                                            </div>
+                                            <div class="sm:w-20">
+                                                <input type="text" wire:model="lineas.{{ $indice }}.unidad" placeholder="Unidad"
+                                                    class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                                <x-input-error :messages="$errors->get('lineas.'.$indice.'.unidad')" class="mt-1" />
+                                            </div>
+                                            <div class="sm:w-24">
+                                                <input type="number" step="0.01" min="0"
+                                                    wire:model.live="lineas.{{ $indice }}.cantidad" placeholder="Cantidad"
+                                                    class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                                <x-input-error :messages="$errors->get('lineas.'.$indice.'.cantidad')" class="mt-1" />
+                                            </div>
+                                            <div class="sm:w-36">
+                                                <input type="number" step="0.01" min="0"
+                                                    wire:model.live="lineas.{{ $indice }}.valor_unitario" placeholder="Valor unitario"
+                                                    class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                                <x-input-error :messages="$errors->get('lineas.'.$indice.'.valor_unitario')" class="mt-1" />
+                                            </div>
+                                            <div class="flex items-center justify-end sm:w-28 sm:justify-center sm:pt-2">
+                                                <span class="text-sm text-gray-500">
+                                                    ${{ number_format((float) ($linea['cantidad'] ?? 0) * (float) ($linea['valor_unitario'] ?? 0), 0, ',', '.') }}
+                                                </span>
+                                            </div>
+                                            <div class="flex justify-end sm:pt-1.5">
+                                                <button type="button" wire:click="eliminarLinea({{ $indice }})"
+                                                    class="text-sm text-red-600 hover:text-red-500">
+                                                    Quitar
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div class="sm:w-24">
-                                            <input type="number" step="0.01" min="0"
-                                                wire:model.live="lineas.{{ $indice }}.cantidad" placeholder="Cantidad"
-                                                class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                            <x-input-error :messages="$errors->get('lineas.'.$indice.'.cantidad')" class="mt-1" />
-                                        </div>
-                                        <div class="sm:w-36">
-                                            <input type="number" step="0.01" min="0"
-                                                wire:model.live="lineas.{{ $indice }}.valor_unitario" placeholder="Valor unitario"
-                                                class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                            <x-input-error :messages="$errors->get('lineas.'.$indice.'.valor_unitario')" class="mt-1" />
-                                        </div>
-                                        <div class="flex items-center justify-end sm:w-28 sm:justify-center sm:pt-2">
-                                            <span class="text-sm text-gray-500">
-                                                ${{ number_format(($linea['cantidad'] ?? 0) * ($linea['valor_unitario'] ?? 0), 0, ',', '.') }}
-                                            </span>
-                                        </div>
-                                        <div class="flex justify-end sm:pt-1.5">
-                                            <button type="button" wire:click="eliminarLinea({{ $indice }})"
-                                                class="text-sm text-red-600 hover:text-red-500">
-                                                Quitar
-                                            </button>
-                                        </div>
+
+                                        @if ($linea['mostrar_detalle'] ?? false)
+                                            <div class="mt-3" wire:ignore>
+                                                <input type="hidden" id="trix-input-{{ $linea['_key'] ?? $indice }}"
+                                                    value="{{ $linea['detalle_extendido'] ?? '' }}">
+                                                <trix-editor input="trix-input-{{ $linea['_key'] ?? $indice }}"
+                                                    x-on:trix-change="$wire.set('lineas.{{ $indice }}.detalle_extendido', $event.target.value)"></trix-editor>
+                                            </div>
+                                            <x-input-error :messages="$errors->get('lineas.'.$indice.'.detalle_extendido')" class="mt-1" />
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>

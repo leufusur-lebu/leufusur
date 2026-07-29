@@ -11,6 +11,16 @@ test('guests are redirected to login', function () {
         ->assertRedirect(route('login'));
 });
 
+test('clearing a linea quantity or price while typing does not crash the preview', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Volt::test('gestion.cotizaciones.form')
+        ->set('lineas.0.cantidad', '')
+        ->set('lineas.0.valor_unitario', '')
+        ->assertOk();
+});
+
 test('can render the create form', function () {
     $user = User::factory()->create();
 
@@ -47,8 +57,8 @@ test('can create a cotizacion with correct totals', function () {
         ->set('fecha_vencimiento', today()->addDays(30)->toDateString())
         ->set('descuento_porcentaje', 10)
         ->set('lineas', [
-            ['descripcion' => 'Cámara IP', 'cantidad' => 2, 'valor_unitario' => 100000],
-            ['descripcion' => 'Instalación', 'cantidad' => 1, 'valor_unitario' => 50000],
+            ['descripcion' => 'Cámara IP', 'unidad' => 'UN', 'cantidad' => 2, 'valor_unitario' => 100000],
+            ['descripcion' => 'Instalación', 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 50000],
         ])
         ->call('guardar')
         ->assertHasNoErrors();
@@ -115,7 +125,7 @@ test('can update an existing borrador', function () {
     Volt::test('gestion.cotizaciones.form', ['cotizacion' => $cotizacion])
         ->set('descripcion', 'Descripción actualizada')
         ->set('lineas', [
-            ['descripcion' => 'Nueva línea', 'cantidad' => 3, 'valor_unitario' => 20000],
+            ['descripcion' => 'Nueva línea', 'unidad' => 'UN', 'cantidad' => 3, 'valor_unitario' => 20000],
         ])
         ->call('guardar')
         ->assertHasNoErrors();

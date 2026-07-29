@@ -24,6 +24,7 @@ class LineaCotizacionFactory extends Factory
         return [
             'cotizacion_id' => Cotizacion::factory(),
             'descripcion' => fake()->sentence(3),
+            'unidad' => 'UN',
             'cantidad' => $cantidad,
             'valor_unitario' => $valorUnitario,
             'subtotal_calculado' => $cantidad * $valorUnitario,

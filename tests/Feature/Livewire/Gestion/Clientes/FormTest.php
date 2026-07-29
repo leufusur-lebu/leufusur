@@ -100,12 +100,32 @@ test('requires the mandatory fields', function () {
 
     Volt::test('gestion.clientes.form')
         ->set('nombre', '')
+        ->set('rut_run', '')
+        ->call('guardar')
+        ->assertHasErrors(['nombre', 'rut_run']);
+});
+
+test('can create a cliente without email, telefono or direccion', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Volt::test('gestion.clientes.form')
+        ->set('tipo', TipoCliente::Persona->value)
+        ->set('nombre', 'Cliente Mínimo')
         ->set('email', '')
         ->set('telefono', '')
-        ->set('rut_run', '')
+        ->set('rut_run', '12.345.678-5')
         ->set('direccion', '')
         ->call('guardar')
-        ->assertHasErrors(['nombre', 'email', 'telefono', 'rut_run', 'direccion']);
+        ->assertHasNoErrors()
+        ->assertRedirect(route('gestion.clientes.index'));
+
+    $cliente = Cliente::firstWhere('nombre', 'Cliente Mínimo');
+
+    expect($cliente)->not->toBeNull();
+    expect($cliente->email)->toBeNull();
+    expect($cliente->telefono)->toBeNull();
+    expect($cliente->direccion)->toBeNull();
 });
 
 test('can render the edit form pre-filled with existing data', function () {

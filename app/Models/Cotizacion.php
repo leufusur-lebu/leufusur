@@ -152,6 +152,8 @@ class Cotizacion extends Model
         foreach ($this->lineas as $linea) {
             $nueva->lineas()->create([
                 'descripcion' => $linea->descripcion,
+                'detalle_extendido' => $linea->detalle_extendido,
+                'unidad' => $linea->unidad,
                 'cantidad' => $linea->cantidad,
                 'valor_unitario' => $linea->valor_unitario,
                 'subtotal_calculado' => $linea->subtotal_calculado,

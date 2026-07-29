@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['cotizacion_id', 'descripcion', 'cantidad', 'valor_unitario', 'subtotal_calculado', 'orden'])]
+#[Fillable(['cotizacion_id', 'descripcion', 'detalle_extendido', 'unidad', 'cantidad', 'valor_unitario', 'subtotal_calculado', 'orden'])]
 class LineaCotizacion extends Model
 {
     /** @use HasFactory<LineaCotizacionFactory> */

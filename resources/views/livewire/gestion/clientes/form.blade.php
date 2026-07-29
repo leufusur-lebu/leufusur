@@ -14,6 +14,7 @@ state([
     'tipo' => TipoCliente::Persona->value,
     'nombre' => '',
     'nombre_empresa' => '',
+    'giro' => '',
     'email' => '',
     'telefono' => '',
     'rut_run' => '',
@@ -26,10 +27,11 @@ mount(function (?Cliente $cliente = null) {
         $this->tipo = $cliente->tipo->value;
         $this->nombre = $cliente->nombre;
         $this->nombre_empresa = $cliente->nombre_empresa ?? '';
-        $this->email = $cliente->email;
-        $this->telefono = $cliente->telefono;
+        $this->giro = $cliente->giro ?? '';
+        $this->email = $cliente->email ?? '';
+        $this->telefono = $cliente->telefono ?? '';
         $this->rut_run = $cliente->rut_run;
-        $this->direccion = $cliente->direccion;
+        $this->direccion = $cliente->direccion ?? '';
     }
 });
 
@@ -38,19 +40,25 @@ $guardar = function () {
         'tipo' => ['required', Rule::enum(TipoCliente::class)],
         'nombre' => ['required', 'string', 'max:255'],
         'nombre_empresa' => ['nullable', 'string', 'max:255'],
-        'email' => ['required', 'email', 'max:255'],
-        'telefono' => ['required', 'string', 'max:50'],
+        'giro' => ['nullable', 'string', 'max:255'],
+        'email' => ['nullable', 'email', 'max:255'],
+        'telefono' => ['nullable', 'string', 'max:50'],
         'rut_run' => [
             'required',
             new RutValido,
             Rule::unique('clientes', 'rut_run')->ignore($this->cliente?->id),
         ],
-        'direccion' => ['required', 'string', 'max:255'],
+        'direccion' => ['nullable', 'string', 'max:255'],
     ]);
 
     if ($datos['tipo'] === TipoCliente::Empresa->value) {
         $datos['nombre_empresa'] = null;
     }
+
+    $datos['giro'] = $datos['giro'] !== '' ? $datos['giro'] : null;
+    $datos['email'] = $datos['email'] !== '' ? $datos['email'] : null;
+    $datos['telefono'] = $datos['telefono'] !== '' ? $datos['telefono'] : null;
+    $datos['direccion'] = $datos['direccion'] !== '' ? $datos['direccion'] : null;
 
     if ($this->cliente) {
         $this->cliente->update($datos);
@@ -108,30 +116,38 @@ $guardar = function () {
                         {{-- Email y teléfono --}}
                         <div class="grid gap-6 sm:grid-cols-2">
                             <div>
-                                <x-input-label for="email" value="Correo electrónico" />
+                                <x-input-label for="email" value="Correo electrónico (opcional)" />
                                 <x-text-input id="email" wire:model="email" type="email" class="mt-1 block w-full" />
                                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
                             </div>
 
                             <div>
-                                <x-input-label for="telefono" value="Teléfono" />
+                                <x-input-label for="telefono" value="Teléfono (opcional)" />
                                 <x-text-input id="telefono" wire:model="telefono" type="text"
                                     placeholder="+56 9 1234 5678" class="mt-1 block w-full" />
                                 <x-input-error :messages="$errors->get('telefono')" class="mt-2" />
                             </div>
                         </div>
 
-                        {{-- RUT --}}
-                        <div>
-                            <x-input-label for="rut_run" value="RUT" />
-                            <x-text-input id="rut_run" wire:model="rut_run" type="text" placeholder="12.345.678-9"
-                                class="mt-1 block w-full" />
-                            <x-input-error :messages="$errors->get('rut_run')" class="mt-2" />
+                        {{-- RUT y Giro --}}
+                        <div class="grid gap-6 sm:grid-cols-2">
+                            <div>
+                                <x-input-label for="rut_run" value="RUT" />
+                                <x-text-input id="rut_run" wire:model="rut_run" type="text" placeholder="12.345.678-9"
+                                    class="mt-1 block w-full" />
+                                <x-input-error :messages="$errors->get('rut_run')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="giro" value="Giro (opcional)" />
+                                <x-text-input id="giro" wire:model="giro" type="text" class="mt-1 block w-full" />
+                                <x-input-error :messages="$errors->get('giro')" class="mt-2" />
+                            </div>
                         </div>
 
                         {{-- Dirección --}}
                         <div>
-                            <x-input-label for="direccion" value="Dirección" />
+                            <x-input-label for="direccion" value="Dirección (opcional)" />
                             <x-text-input id="direccion" wire:model="direccion" type="text" class="mt-1 block w-full" />
                             <x-input-error :messages="$errors->get('direccion')" class="mt-2" />
                         </div>

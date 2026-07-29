@@ -170,8 +170,8 @@ $clientes = computed(function () {
                                                 <span class="block text-xs text-gray-500">{{ $cliente->nombre_empresa }}</span>
                                             @endif
                                         </td>
-                                        <td class="px-3 py-3 text-sm text-gray-500">{{ $cliente->email }}</td>
-                                        <td class="px-3 py-3 text-sm text-gray-500">{{ $cliente->telefono }}</td>
+                                        <td class="px-3 py-3 text-sm text-gray-500">{{ $cliente->email ?? '—' }}</td>
+                                        <td class="px-3 py-3 text-sm text-gray-500">{{ $cliente->telefono ?? '—' }}</td>
                                         <td class="px-3 py-3 text-sm text-gray-500">{{ $cliente->rut_run }}</td>
                                         <td class="py-3 pl-3 text-right text-sm">
                                             <a href="{{ route('gestion.clientes.edit', $cliente) }}" wire:navigate

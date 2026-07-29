@@ -23,6 +23,7 @@ class ClienteFactory extends Factory
             'tipo' => fake()->randomElement(TipoCliente::cases()),
             'nombre' => fake()->name(),
             'nombre_empresa' => null,
+            'giro' => fake()->words(3, true),
             'email' => fake()->unique()->safeEmail(),
             'telefono' => fake()->phoneNumber(),
             'rut_run' => $this->rutValido(),

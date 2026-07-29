@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'trix/dist/trix.css';
 @plugin '@tailwindcss/forms';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -27,4 +28,24 @@
         /* Compensa la barra de navegación fija al saltar a un ancla */
         scroll-padding-top: 5rem;
     }
+}
+
+/* Editor de texto enriquecido (Trix) para el detalle de líneas de cotización */
+trix-editor {
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 6rem;
+    font-size: 0.875rem;
+}
+
+trix-editor:focus {
+    border-color: #14b8a6;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 1px #14b8a6;
+}
+
+trix-toolbar .trix-button-group {
+    border-radius: 0.375rem;
 }
