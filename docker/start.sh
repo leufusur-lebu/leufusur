@@ -2,9 +2,12 @@
 
 cd /var/www
 
-# Asegurar que exista el archivo SQLite (se excluye de la imagen vía .dockerignore)
-mkdir -p database
-touch database/database.sqlite
+# Ruta de la base SQLite: configurable vía DB_DATABASE (para poder montarla en un
+# volumen persistente sin tapar database/migrations, que vive en la misma carpeta
+# database/ dentro de la imagen). Si no se define, usa la ruta por defecto.
+DB_PATH="${DB_DATABASE:-database/database.sqlite}"
+mkdir -p "$(dirname "$DB_PATH")"
+touch "$DB_PATH"
 
 # APP_KEY se inyecta como variable de entorno (no hay .env en el contenedor),
 # así que no se genera aquí: escribir en un .env inexistente solo produce errores.
