@@ -28,6 +28,13 @@ $ordenarPor = function (string $columna) {
     }
 };
 
+$eliminar = function (Cotizacion $cotizacion) {
+    $numero = $cotizacion->numero_cotizacion;
+    $cotizacion->delete();
+
+    session()->flash('status', 'Cotización '.$numero.' eliminada.');
+};
+
 $cotizaciones = computed(function () {
     return Cotizacion::query()
         ->with('cliente')
@@ -162,6 +169,11 @@ $cotizaciones = computed(function () {
                                         <td class="py-3 pl-3 text-right text-sm">
                                             <a href="{{ route('gestion.cotizaciones.show', $cotizacion) }}" wire:navigate
                                                 class="font-medium text-teal-600 hover:text-teal-500">Ver</a>
+                                            <button wire:click="eliminar({{ $cotizacion->id }})"
+                                                wire:confirm="¿Eliminar la cotización {{ $cotizacion->numero_cotizacion }}? Esta acción no se puede deshacer."
+                                                class="ml-3 font-medium text-red-600 hover:text-red-500">
+                                                Eliminar
+                                            </button>
                                         </td>
                                     </tr>
                                 @empty

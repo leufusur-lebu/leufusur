@@ -101,6 +101,23 @@ test('duplicar creates a new borrador with copied lineas and redirects to edit',
     expect((float) $nueva->total_calculado)->toBe(30000 * 1.19);
 });
 
+test('eliminar deletes the cotizacion and redirects to the index', function () {
+    $user = User::factory()->create();
+    $cotizacion = Cotizacion::factory()->create();
+    $cotizacion->lineas()->create([
+        'descripcion' => 'Servicio A', 'cantidad' => 1, 'valor_unitario' => 10000, 'subtotal_calculado' => 10000, 'orden' => 0,
+    ]);
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.cotizaciones.show', ['cotizacion' => $cotizacion])
+        ->call('eliminar')
+        ->assertRedirect(route('gestion.cotizaciones.index'));
+
+    $this->assertDatabaseMissing('cotizaciones', ['id' => $cotizacion->id]);
+    $this->assertDatabaseMissing('lineas_cotizacion', ['cotizacion_id' => $cotizacion->id]);
+});
+
 test('pdf export returns a downloadable pdf', function () {
     $user = User::factory()->create();
     $cotizacion = Cotizacion::factory()->create();

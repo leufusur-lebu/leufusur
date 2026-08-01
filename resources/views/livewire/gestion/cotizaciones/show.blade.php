@@ -52,6 +52,15 @@ $duplicar = function () {
     $this->redirectRoute('gestion.cotizaciones.edit', $nueva, navigate: true);
 };
 
+$eliminar = function () {
+    $numero = $this->cotizacion->numero_cotizacion;
+    $this->cotizacion->delete();
+
+    Session::flash('status', 'Cotización '.$numero.' eliminada.');
+
+    $this->redirectRoute('gestion.cotizaciones.index', navigate: true);
+};
+
 ?>
 
 <div>
@@ -115,6 +124,12 @@ $duplicar = function () {
                             class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                             Exportar PDF
                         </a>
+
+                        <button wire:click="eliminar"
+                            wire:confirm="¿Eliminar la cotización {{ $cotizacion->numero_cotizacion }}? Esta acción no se puede deshacer."
+                            class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-700 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50">
+                            Eliminar
+                        </button>
                     </div>
                 </div>
             </div>

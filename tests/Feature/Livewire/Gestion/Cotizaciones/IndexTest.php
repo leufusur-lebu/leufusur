@@ -2,6 +2,7 @@
 
 use App\Enums\EstadoCotizacion;
 use App\Models\Cotizacion;
+use App\Models\LineaCotizacion;
 use App\Models\User;
 use Livewire\Volt\Volt;
 
@@ -45,4 +46,19 @@ test('filter by estado narrows the list', function () {
         ->set('estado', EstadoCotizacion::Aprobada->value)
         ->assertSee($aprobada->numero_cotizacion)
         ->assertDontSee($borrador->numero_cotizacion);
+});
+
+test('can delete a cotizacion along with its lineas and gastos', function () {
+    $user = User::factory()->create();
+    $cotizacion = Cotizacion::factory()
+        ->has(LineaCotizacion::factory()->count(2), 'lineas')
+        ->create();
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.cotizaciones.index')
+        ->call('eliminar', $cotizacion->id);
+
+    $this->assertDatabaseMissing('cotizaciones', ['id' => $cotizacion->id]);
+    $this->assertDatabaseMissing('lineas_cotizacion', ['cotizacion_id' => $cotizacion->id]);
 });
