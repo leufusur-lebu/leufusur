@@ -173,6 +173,12 @@ $guardar = function () {
 
     session()->flash('status', $this->gastoId ? 'Gasto general actualizado.' : 'Gasto general agregado.');
 
+    // Dejar el formulario limpio: como el modal ahora se abre al instante desde el
+    // cliente, si no reseteamos aquí, al reabrir se vería por un momento el gasto anterior.
+    $this->reset(['gastoId', 'numero_documento', 'proveedor', 'descripcion', 'monto_neto', 'iva', 'nuevoComprobante']);
+    $this->fecha_gasto = today()->toDateString();
+    $this->tipo = TipoDocumentoGasto::Factura->value;
+
     $this->dispatch('close-modal', 'gasto-general-modal');
 };
 
@@ -313,7 +319,7 @@ $eliminar = function (Gasto $gasto) {
                         <h2 class="text-sm font-semibold text-gray-900">Gastos generales</h2>
                         <p class="mt-1 text-xs text-gray-500">Gastos de la empresa sin proyecto (arriendo, servicios, etc.). Suman crédito fiscal.</p>
                     </div>
-                    <button type="button" wire:click="prepararNuevo"
+                    <button type="button" wire:click="prepararNuevo" x-on:click="$dispatch('open-modal', 'gasto-general-modal')"
                         class="rounded-md bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-500">
                         + Agregar gasto
                     </button>
@@ -365,7 +371,8 @@ $eliminar = function (Gasto $gasto) {
 
             {{-- Modal gasto general --}}
             <x-modal name="gasto-general-modal" :show="$errors->isNotEmpty()">
-                <form wire:submit="guardar" class="p-6">
+                <form wire:submit="guardar" class="p-6" x-data
+                    x-on:open-modal.window="$event.detail === 'gasto-general-modal' && $nextTick(() => setTimeout(() => document.getElementById('numero_documento_general')?.focus(), 150))">
                     <h2 class="text-lg font-medium text-gray-900">
                         {{ $gastoId ? 'Editar gasto general' : 'Agregar gasto general' }}
                     </h2>
@@ -417,12 +424,14 @@ $eliminar = function (Gasto $gasto) {
                         <div>
                             <x-input-label for="monto_neto_general" value="Monto neto" />
                             <input id="monto_neto_general" type="number" step="0.01" min="0" x-model="neto" x-on:input="recalcularIva()"
+                                x-on:focus="if (parseFloat(neto) === 0) neto = ''" x-on:blur="if (neto === '' || neto === null) neto = 0"
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
                             <x-input-error :messages="$errors->get('monto_neto')" class="mt-2" />
                         </div>
                         <div>
                             <x-input-label for="iva_general" value="IVA (autocalculado, editable)" />
                             <input id="iva_general" type="number" step="0.01" min="0" x-model="iva"
+                                x-on:focus="if (parseFloat(iva) === 0) iva = ''" x-on:blur="if (iva === '' || iva === null) iva = 0"
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
                             <x-input-error :messages="$errors->get('iva')" class="mt-2" />
                         </div>
