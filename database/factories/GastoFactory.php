@@ -35,4 +35,14 @@ class GastoFactory extends Factory
             'archivo_comprobante' => null,
         ];
     }
+
+    /**
+     * Gasto general de la empresa, no ligado a ninguna cotización.
+     */
+    public function general(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'cotizacion_id' => null,
+        ]);
+    }
 }

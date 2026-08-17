@@ -33,6 +33,9 @@ $logout = function (Logout $logout) {
                     <x-nav-link :href="route('gestion.cotizaciones.index')" :active="request()->routeIs('gestion.cotizaciones.*')" wire:navigate>
                         Cotizaciones
                     </x-nav-link>
+                    <x-nav-link :href="route('gestion.contabilidad.index')" :active="request()->routeIs('gestion.contabilidad.*')" wire:navigate>
+                        Contabilidad
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -89,6 +92,9 @@ $logout = function (Logout $logout) {
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('gestion.cotizaciones.index')" :active="request()->routeIs('gestion.cotizaciones.*')" wire:navigate>
                 Cotizaciones
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('gestion.contabilidad.index')" :active="request()->routeIs('gestion.contabilidad.*')" wire:navigate>
+                Contabilidad
             </x-responsive-nav-link>
         </div>
 

@@ -259,8 +259,9 @@ $eliminar = function () {
                 </ul>
             </div>
 
-            {{-- Gastos: solo visible cuando la cotización está aprobada --}}
+            {{-- Facturación y gastos: solo cuando la cotización está aprobada --}}
             @if ($cotizacion->estado === EstadoCotizacion::Aprobada)
+                <livewire:gestion.cotizaciones.factura-venta :cotizacion="$cotizacion" :key="'factura-venta-'.$cotizacion->id" />
                 <livewire:gestion.cotizaciones.gastos :cotizacion="$cotizacion" :key="'gastos-'.$cotizacion->id" />
             @endif
 

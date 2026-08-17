@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use RuntimeException;
 
 #[Fillable([
@@ -71,6 +72,11 @@ class Cotizacion extends Model
     public function gastos(): HasMany
     {
         return $this->hasMany(Gasto::class);
+    }
+
+    public function facturaVenta(): HasOne
+    {
+        return $this->hasOne(FacturaVenta::class);
     }
 
     /**

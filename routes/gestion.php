@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Gestion\CotizacionAdjuntoController;
 use App\Http\Controllers\Gestion\CotizacionPdfController;
+use App\Http\Controllers\Gestion\FacturaVentaArchivoController;
 use App\Http\Controllers\Gestion\GastoComprobanteController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -30,5 +31,9 @@ Route::prefix('gestion')->group(function () {
         Volt::route('cotizaciones/{cotizacion}', 'gestion.cotizaciones.show')->name('cotizaciones.show');
 
         Route::get('gastos/{gasto}/comprobante', GastoComprobanteController::class)->name('gastos.comprobante');
+
+        Route::get('facturas-venta/{facturaVenta}/archivo', FacturaVentaArchivoController::class)->name('facturas-venta.archivo');
+
+        Volt::route('contabilidad', 'gestion.contabilidad.index')->name('contabilidad.index');
     });
 });
