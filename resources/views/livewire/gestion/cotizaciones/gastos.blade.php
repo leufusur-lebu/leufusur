@@ -40,10 +40,6 @@ $resumen = computed(function () {
     ];
 });
 
-$updatedMontoNeto = function () {
-    $this->iva = round(((float) $this->monto_neto) * Cotizacion::IVA);
-};
-
 $prepararNuevo = function () {
     $this->gastoId = null;
     $this->fecha_gasto = today()->toDateString();
@@ -85,6 +81,11 @@ $guardar = function () {
         'iva' => ['required', 'numeric', 'min:0'],
         'nuevoComprobante' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
     ]);
+
+    // Respaldo por si el IVA no llegó calculado desde el cliente.
+    if ((float) $datos['iva'] <= 0 && (float) $datos['monto_neto'] > 0) {
+        $datos['iva'] = round($datos['monto_neto'] * Cotizacion::IVA);
+    }
 
     $datos['total_calculado'] = $datos['monto_neto'] + $datos['iva'];
 
@@ -242,16 +243,22 @@ $eliminar = function (Gasto $gasto) {
                 <x-input-error :messages="$errors->get('descripcion')" class="mt-2" />
             </div>
 
-            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            {{-- IVA calculado en el cliente (Alpine) para no cerrar el modal:
+                 un wire:model.live dispararía un re-render por tecla que reinicia el modal de Breeze. --}}
+            <div class="mt-4 grid gap-4 sm:grid-cols-2" x-data="{
+                neto: @entangle('monto_neto'),
+                iva: @entangle('iva'),
+                recalcularIva() { this.iva = Math.round((parseFloat(this.neto) || 0) * 0.19) },
+            }">
                 <div>
                     <x-input-label for="monto_neto" value="Monto neto" />
-                    <input id="monto_neto" type="number" step="0.01" min="0" wire:model.live="monto_neto"
+                    <input id="monto_neto" type="number" step="0.01" min="0" x-model="neto" x-on:input="recalcularIva()"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
                     <x-input-error :messages="$errors->get('monto_neto')" class="mt-2" />
                 </div>
                 <div>
                     <x-input-label for="iva" value="IVA (autocalculado, editable)" />
-                    <input id="iva" type="number" step="0.01" min="0" wire:model="iva"
+                    <input id="iva" type="number" step="0.01" min="0" x-model="iva"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
                     <x-input-error :messages="$errors->get('iva')" class="mt-2" />
                 </div>

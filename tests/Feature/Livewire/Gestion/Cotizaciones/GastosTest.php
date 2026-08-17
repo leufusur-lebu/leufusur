@@ -28,15 +28,26 @@ test('gastos section is visible when the cotizacion is aprobada', function () {
         ->assertSee('Agregar gasto');
 });
 
-test('monto_neto updates auto-calculate the iva at 19%', function () {
+test('iva is derived from monto_neto on save when left at zero', function () {
     $user = User::factory()->create();
     $cotizacion = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
 
     $this->actingAs($user);
 
+    // El IVA se calcula en el cliente (Alpine); si llega en cero, guardar lo deriva del neto.
     Volt::test('gestion.cotizaciones.gastos', ['cotizacion' => $cotizacion])
+        ->call('prepararNuevo')
+        ->set('numero_documento', 'F-AUTO')
+        ->set('proveedor', 'Proveedor')
+        ->set('descripcion', 'Compra')
         ->set('monto_neto', 100000)
-        ->assertSet('iva', 19000.0);
+        ->call('guardar')
+        ->assertHasNoErrors();
+
+    $gasto = Gasto::firstWhere('numero_documento', 'F-AUTO');
+
+    expect((float) $gasto->iva)->toBe(19000.0);
+    expect((float) $gasto->total_calculado)->toBe(119000.0);
 });
 
 test('can add a gasto with correct totals', function () {
