@@ -4,6 +4,7 @@ use App\Enums\EstadoCotizacion;
 use App\Models\Cotizacion;
 use App\Models\FacturaVenta;
 use App\Models\Gasto;
+use App\Models\Proyecto;
 use App\Models\User;
 use Livewire\Volt\Volt;
 
@@ -176,4 +177,74 @@ test('can delete a gasto general', function () {
         ->call('eliminar', $gasto->id);
 
     $this->assertModelMissing($gasto);
+});
+
+test('rentabilidad includes proyectos alongside cotizaciones', function () {
+    $user = User::factory()->create();
+
+    $proyecto = Proyecto::factory()->create(['nombre' => 'Proyecto directo X']);
+    FacturaVenta::factory()->create([
+        'cotizacion_id' => null,
+        'proyecto_id' => $proyecto->id,
+        'monto_neto' => 600000,
+        'iva' => 114000,
+        'total_calculado' => 714000,
+    ]);
+    Gasto::factory()->create(['cotizacion_id' => null, 'proyecto_id' => $proyecto->id, 'monto_neto' => 200000, 'iva' => 38000, 'total_calculado' => 238000]);
+
+    $this->actingAs($user);
+
+    $rentabilidad = Volt::test('gestion.contabilidad.index')->get('rentabilidad');
+
+    $fila = $rentabilidad->firstWhere('etiqueta', 'Proyecto directo X');
+
+    expect($fila)->not->toBeNull();
+    expect($fila['origen'])->toBe('Proyecto');
+    expect($fila['ingresoNeto'])->toBe(600000.0);
+    expect($fila['gastoNeto'])->toBe(200000.0);
+    expect($fila['margen'])->toBe(400000.0);
+});
+
+test('gastos generales list excludes proyecto gastos', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->create();
+    Gasto::factory()->create(['cotizacion_id' => null, 'proyecto_id' => $proyecto->id, 'numero_documento' => 'PROY-GASTO']);
+    Gasto::factory()->general()->create(['numero_documento' => 'GEN-2']);
+
+    $this->actingAs($user);
+
+    $lista = Volt::test('gestion.contabilidad.index')->get('gastosGenerales');
+
+    expect($lista->pluck('numero_documento')->all())->toContain('GEN-2');
+    expect($lista->pluck('numero_documento')->all())->not->toContain('PROY-GASTO');
+});
+
+test('proyecto factura and gastos feed the monthly iva summary', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->create();
+    FacturaVenta::factory()->create([
+        'cotizacion_id' => null,
+        'proyecto_id' => $proyecto->id,
+        'fecha_emision' => '2026-08-05',
+        'monto_neto' => 500000,
+        'iva' => 95000,
+        'total_calculado' => 595000,
+    ]);
+    Gasto::factory()->create([
+        'cotizacion_id' => null,
+        'proyecto_id' => $proyecto->id,
+        'fecha_gasto' => '2026-08-10',
+        'monto_neto' => 100000,
+        'iva' => 19000,
+        'total_calculado' => 119000,
+    ]);
+
+    $this->actingAs($user);
+
+    $resumen = Volt::test('gestion.contabilidad.index')->get('resumenIva');
+
+    expect($resumen)->toHaveCount(1);
+    expect($resumen[0]['debito'])->toBe(95000.0);
+    expect($resumen[0]['credito'])->toBe(19000.0);
+    expect($resumen[0]['aPagar'])->toBe(76000.0);
 });

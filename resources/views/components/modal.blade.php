@@ -49,29 +49,21 @@ $maxWidth = [
     class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50"
     style="display: {{ $show ? 'block' : 'none' }};"
 >
+    {{-- Sin x-transition a propósito: cuando el modal se abre optimista (cliente) y en paralelo
+         llega el morph de Livewire (p. ej. el reset de prepararNuevo), el morph interrumpe la
+         transición de entrada y deja el panel congelado en display:none. Sin transición, x-show
+         alterna display directo y no hay estado intermedio que congelar. --}}
     <div
         x-show="show"
-        class="fixed inset-0 transform transition-all"
+        class="fixed inset-0"
         x-on:click="show = false"
-        x-transition:enter="ease-out duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
     >
         <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
     </div>
 
     <div
         x-show="show"
-        class="relative z-10 mb-6 bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:w-full {{ $maxWidth }} sm:mx-auto"
-        x-transition:enter="ease-out duration-300"
-        x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-        x-transition:leave="ease-in duration-200"
-        x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-        x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        class="relative z-10 mb-6 bg-white rounded-lg overflow-hidden shadow-xl sm:w-full {{ $maxWidth }} sm:mx-auto"
     >
         {{ $slot }}
     </div>

@@ -26,4 +26,9 @@ class Cliente extends Model
     {
         return $this->hasMany(Cotizacion::class);
     }
+
+    public function proyectos(): HasMany
+    {
+        return $this->hasMany(Proyecto::class);
+    }
 }

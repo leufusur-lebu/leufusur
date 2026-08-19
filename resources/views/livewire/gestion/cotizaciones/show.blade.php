@@ -261,8 +261,9 @@ $eliminar = function () {
 
             {{-- Facturación y gastos: solo cuando la cotización está aprobada --}}
             @if ($cotizacion->estado === EstadoCotizacion::Aprobada)
-                <livewire:gestion.cotizaciones.factura-venta :cotizacion="$cotizacion" :key="'factura-venta-'.$cotizacion->id" />
-                <livewire:gestion.cotizaciones.gastos :cotizacion="$cotizacion" :key="'gastos-'.$cotizacion->id" />
+                <livewire:gestion.cotizaciones.factura-venta :parent="$cotizacion" :key="'factura-venta-'.$cotizacion->id" />
+                <livewire:gestion.cotizaciones.gastos :parent="$cotizacion" :referencia-monto="(float) ($cotizacion->total_calculado ?? 0)"
+                    referencia-label="Margen vs. cotización" :key="'gastos-'.$cotizacion->id" />
             @endif
 
             <a href="{{ route('gestion.cotizaciones.index') }}" wire:navigate class="inline-block text-sm text-gray-600 hover:text-gray-900">

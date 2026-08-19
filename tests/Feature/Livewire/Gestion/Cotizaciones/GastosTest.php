@@ -35,7 +35,7 @@ test('iva is derived from monto_neto on save when left at zero', function () {
     $this->actingAs($user);
 
     // El IVA se calcula en el cliente (Alpine); si llega en cero, guardar lo deriva del neto.
-    Volt::test('gestion.cotizaciones.gastos', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.gastos', ['parent' => $cotizacion])
         ->call('prepararNuevo')
         ->set('numero_documento', 'F-AUTO')
         ->set('proveedor', 'Proveedor')
@@ -56,7 +56,7 @@ test('can add a gasto with correct totals', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.gastos', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.gastos', ['parent' => $cotizacion])
         ->call('prepararNuevo')
         ->set('tipo', TipoDocumentoGasto::Factura->value)
         ->set('numero_documento', 'F-1001')
@@ -81,7 +81,7 @@ test('requires the mandatory fields', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.gastos', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.gastos', ['parent' => $cotizacion])
         ->call('prepararNuevo')
         ->set('numero_documento', '')
         ->set('proveedor', '')
@@ -97,7 +97,7 @@ test('can edit an existing gasto', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.gastos', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.gastos', ['parent' => $cotizacion])
         ->call('prepararEdicion', $gasto->id)
         ->assertSet('proveedor', 'Proveedor original')
         ->set('proveedor', 'Proveedor actualizado')
@@ -114,7 +114,7 @@ test('can delete a gasto', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.gastos', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.gastos', ['parent' => $cotizacion])
         ->call('eliminar', $gasto->id);
 
     $this->assertModelMissing($gasto);
@@ -131,8 +131,10 @@ test('resumen totals and margen compare against the cotizacion total', function 
 
     $this->actingAs($user);
 
-    $resumen = Volt::test('gestion.cotizaciones.gastos', ['cotizacion' => $cotizacion])
-        ->get('resumen');
+    $resumen = Volt::test('gestion.cotizaciones.gastos', [
+        'parent' => $cotizacion,
+        'referenciaMonto' => (float) $cotizacion->total_calculado,
+    ])->get('resumen');
 
     expect((float) $resumen['totalNeto'])->toBe(150000.0);
     expect((float) $resumen['totalIva'])->toBe(28500.0);

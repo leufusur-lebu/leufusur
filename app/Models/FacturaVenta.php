@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'cotizacion_id',
+    'proyecto_id',
     'numero_factura',
     'fecha_emision',
     'descripcion',
@@ -38,5 +39,10 @@ class FacturaVenta extends Model
     public function cotizacion(): BelongsTo
     {
         return $this->belongsTo(Cotizacion::class);
+    }
+
+    public function proyecto(): BelongsTo
+    {
+        return $this->belongsTo(Proyecto::class);
     }
 }

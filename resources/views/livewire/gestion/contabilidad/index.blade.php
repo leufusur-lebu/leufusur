@@ -5,6 +5,7 @@ use App\Enums\TipoDocumentoGasto;
 use App\Models\Cotizacion;
 use App\Models\FacturaVenta;
 use App\Models\Gasto;
+use App\Models\Proyecto;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
@@ -79,33 +80,58 @@ $totales = computed(function () {
 });
 
 /**
- * Rentabilidad por proyecto: ingreso facturado (o cotizado si aún no se factura)
- * menos los gastos netos del proyecto.
+ * Rentabilidad por trabajo: reúne cotizaciones aprobadas y proyectos directos.
+ * Ingreso = lo facturado (o lo cotizado si aún no se factura) menos los gastos netos.
  */
 $rentabilidad = computed(function () {
-    return Cotizacion::where('estado', EstadoCotizacion::Aprobada)
+    $cotizaciones = Cotizacion::where('estado', EstadoCotizacion::Aprobada)
         ->with(['facturaVenta', 'gastos', 'cliente'])
-        ->orderByDesc('aprobada_en')
         ->get()
         ->map(function (Cotizacion $cotizacion) {
             $ingresoNeto = $cotizacion->facturaVenta
                 ? (float) $cotizacion->facturaVenta->monto_neto
                 : (float) $cotizacion->base_gravada_calculada;
             $gastoNeto = (float) $cotizacion->gastos->sum('monto_neto');
-            $margen = $ingresoNeto - $gastoNeto;
 
             return [
-                'cotizacion' => $cotizacion,
+                'origen' => 'Cotización',
+                'etiqueta' => $cotizacion->numero_cotizacion,
+                'clienteNombre' => $cotizacion->cliente->nombre,
+                'url' => route('gestion.cotizaciones.show', $cotizacion),
+                'fecha' => $cotizacion->aprobada_en ?? $cotizacion->created_at,
                 'ingresoNeto' => $ingresoNeto,
                 'gastoNeto' => $gastoNeto,
-                'margen' => $margen,
-                'margenPorcentaje' => $ingresoNeto > 0 ? ($margen / $ingresoNeto) * 100 : 0.0,
+                'margen' => $ingresoNeto - $gastoNeto,
+                'margenPorcentaje' => $ingresoNeto > 0 ? (($ingresoNeto - $gastoNeto) / $ingresoNeto) * 100 : 0.0,
                 'facturada' => (bool) $cotizacion->facturaVenta,
             ];
         });
+
+    $proyectos = Proyecto::with(['facturaVenta', 'gastos', 'cliente'])
+        ->get()
+        ->map(function (Proyecto $proyecto) {
+            $ingresoNeto = (float) ($proyecto->facturaVenta?->monto_neto ?? 0);
+            $gastoNeto = (float) $proyecto->gastos->sum('monto_neto');
+
+            return [
+                'origen' => 'Proyecto',
+                'etiqueta' => $proyecto->nombre,
+                'clienteNombre' => $proyecto->cliente->nombre,
+                'url' => route('gestion.proyectos.show', $proyecto),
+                'fecha' => $proyecto->fecha_inicio,
+                'ingresoNeto' => $ingresoNeto,
+                'gastoNeto' => $gastoNeto,
+                'margen' => $ingresoNeto - $gastoNeto,
+                'margenPorcentaje' => $ingresoNeto > 0 ? (($ingresoNeto - $gastoNeto) / $ingresoNeto) * 100 : 0.0,
+                'facturada' => (bool) $proyecto->facturaVenta,
+            ];
+        });
+
+    return $cotizaciones->concat($proyectos)->sortByDesc('fecha')->values();
 });
 
-$gastosGenerales = computed(fn () => Gasto::whereNull('cotizacion_id')->latest('fecha_gasto')->get());
+// Gastos generales: sin cotización NI proyecto (gastos propios de la empresa).
+$gastosGenerales = computed(fn () => Gasto::whereNull('cotizacion_id')->whereNull('proyecto_id')->latest('fecha_gasto')->get());
 
 $prepararNuevo = function () {
     $this->gastoId = null;
@@ -269,14 +295,14 @@ $eliminar = function (Gasto $gasto) {
                 </div>
             </div>
 
-            {{-- Rentabilidad por proyecto --}}
+            {{-- Rentabilidad por trabajo (cotizaciones + proyectos) --}}
             <div class="overflow-hidden rounded-lg bg-white p-6 shadow-sm">
-                <h2 class="text-sm font-semibold text-gray-900">Rentabilidad por proyecto</h2>
+                <h2 class="text-sm font-semibold text-gray-900">Rentabilidad por trabajo</h2>
                 <div class="mt-4 overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead>
                             <tr>
-                                <th class="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Cotización</th>
+                                <th class="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Trabajo</th>
                                 <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Cliente</th>
                                 <th class="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Ingreso neto</th>
                                 <th class="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Gasto neto</th>
@@ -286,15 +312,16 @@ $eliminar = function (Gasto $gasto) {
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @forelse ($this->rentabilidad as $fila)
-                                <tr wire:key="rent-{{ $fila['cotizacion']->id }}">
+                                <tr wire:key="rent-{{ $fila['origen'] }}-{{ $loop->index }}">
                                     <td class="py-2 text-sm">
-                                        <a href="{{ route('gestion.cotizaciones.show', $fila['cotizacion']) }}" wire:navigate
-                                            class="font-medium text-teal-600 hover:text-teal-500">{{ $fila['cotizacion']->numero_cotizacion }}</a>
+                                        <a href="{{ $fila['url'] }}" wire:navigate
+                                            class="font-medium text-teal-600 hover:text-teal-500">{{ $fila['etiqueta'] }}</a>
+                                        <span class="ml-1 text-xs text-gray-400">{{ $fila['origen'] }}</span>
                                         @unless ($fila['facturada'])
                                             <span class="ml-1 text-xs text-amber-600">(sin facturar)</span>
                                         @endunless
                                     </td>
-                                    <td class="px-3 py-2 text-sm text-gray-500">{{ $fila['cotizacion']->cliente->nombre }}</td>
+                                    <td class="px-3 py-2 text-sm text-gray-500">{{ $fila['clienteNombre'] }}</td>
                                     <td class="px-3 py-2 text-right text-sm text-gray-500">${{ number_format($fila['ingresoNeto'], 0, ',', '.') }}</td>
                                     <td class="px-3 py-2 text-right text-sm text-gray-500">${{ number_format($fila['gastoNeto'], 0, ',', '.') }}</td>
                                     <td class="px-3 py-2 text-right text-sm font-semibold {{ $fila['margen'] >= 0 ? 'text-green-700' : 'text-red-700' }}">
@@ -304,7 +331,7 @@ $eliminar = function (Gasto $gasto) {
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="py-6 text-center text-sm text-gray-500">Aún no hay proyectos aprobados.</td>
+                                    <td colspan="6" class="py-6 text-center text-sm text-gray-500">Aún no hay trabajos con ingresos o gastos.</td>
                                 </tr>
                             @endforelse
                         </tbody>

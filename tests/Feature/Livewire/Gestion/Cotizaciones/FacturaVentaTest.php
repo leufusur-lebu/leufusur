@@ -37,7 +37,7 @@ test('prefills neto and iva from the cotizacion on mount', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.factura-venta', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.factura-venta', ['parent' => $cotizacion])
         ->assertSet('monto_neto', 200000.0)
         ->assertSet('iva', 38000.0);
 });
@@ -48,7 +48,7 @@ test('monto_neto updates auto-calculate the iva at 19%', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.factura-venta', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.factura-venta', ['parent' => $cotizacion])
         ->set('monto_neto', 100000)
         ->assertSet('iva', 19000.0);
 });
@@ -59,7 +59,7 @@ test('can register a factura de venta with correct totals', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.factura-venta', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.factura-venta', ['parent' => $cotizacion])
         ->set('numero_factura', '1234')
         ->set('fecha_emision', '2026-08-10')
         ->set('monto_neto', 300000)
@@ -82,7 +82,7 @@ test('only one factura de venta per cotizacion (saving twice updates)', function
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.factura-venta', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.factura-venta', ['parent' => $cotizacion])
         ->assertSet('numero_factura', '111')
         ->set('numero_factura', '222')
         ->call('guardar')
@@ -98,7 +98,7 @@ test('requires numero_factura and fecha_emision', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.factura-venta', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.factura-venta', ['parent' => $cotizacion])
         ->set('numero_factura', '')
         ->set('fecha_emision', '')
         ->call('guardar')
@@ -112,7 +112,7 @@ test('can delete the factura de venta', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.factura-venta', ['cotizacion' => $cotizacion])
+    Volt::test('gestion.cotizaciones.factura-venta', ['parent' => $cotizacion])
         ->call('eliminar');
 
     $this->assertModelMissing($factura);

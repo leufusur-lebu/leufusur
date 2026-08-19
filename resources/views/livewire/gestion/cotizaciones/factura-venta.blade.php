@@ -1,14 +1,15 @@
 <?php
 
 use App\Models\Cotizacion;
-use App\Models\FacturaVenta;
 
 use function Livewire\Volt\{computed, mount, state, usesFileUploads};
 
 usesFileUploads();
 
+// Componente reutilizable: la factura de venta de un "padre" (Cotización o Proyecto).
+// El padre solo necesita exponer la relación facturaVenta().
 state([
-    'cotizacion' => null,
+    'parent' => null,
     'numero_factura' => '',
     'fecha_emision' => fn () => today()->toDateString(),
     'descripcion' => '',
@@ -17,24 +18,24 @@ state([
     'nuevoArchivo' => null,
 ]);
 
-mount(function (Cotizacion $cotizacion) {
-    $this->cotizacion = $cotizacion;
+mount(function ($parent) {
+    $this->parent = $parent;
 
-    if ($factura = $cotizacion->facturaVenta) {
+    if ($factura = $parent->facturaVenta) {
         $this->numero_factura = $factura->numero_factura;
         $this->fecha_emision = $factura->fecha_emision->toDateString();
         $this->descripcion = (string) $factura->descripcion;
         $this->monto_neto = (float) $factura->monto_neto;
         $this->iva = (float) $factura->iva;
     } else {
-        // Prefill con los montos de la cotización: normalmente se factura lo cotizado,
-        // pero es editable porque el proyecto ejecutado puede diferir.
-        $this->monto_neto = (float) $cotizacion->base_gravada_calculada;
-        $this->iva = (float) $cotizacion->iva_calculado;
+        // Prefill con los montos cotizados si el padre es una cotización (normalmente se
+        // factura lo cotizado, pero es editable). Un proyecto directo parte en cero.
+        $this->monto_neto = (float) ($parent->base_gravada_calculada ?? 0);
+        $this->iva = (float) ($parent->iva_calculado ?? 0);
     }
 });
 
-$factura = computed(fn () => $this->cotizacion->facturaVenta);
+$factura = computed(fn () => $this->parent->facturaVenta);
 
 $updatedMontoNeto = function () {
     $this->iva = round(((float) $this->monto_neto) * Cotizacion::IVA);
@@ -52,7 +53,7 @@ $guardar = function () {
 
     $datos['total_calculado'] = $datos['monto_neto'] + $datos['iva'];
 
-    $factura = $this->cotizacion->facturaVenta ?? new FacturaVenta(['cotizacion_id' => $this->cotizacion->id]);
+    $factura = $this->parent->facturaVenta ?? $this->parent->facturaVenta()->make();
     $factura->fill($datos);
 
     if ($this->nuevoArchivo) {
@@ -63,22 +64,22 @@ $guardar = function () {
 
     $this->nuevoArchivo = null;
     unset($this->factura);
-    $this->cotizacion->refresh();
+    $this->parent->refresh();
 
     session()->flash('status', 'Factura de venta guardada.');
 };
 
 $eliminar = function () {
-    $this->cotizacion->facturaVenta?->delete();
+    $this->parent->facturaVenta?->delete();
 
     unset($this->factura);
-    $this->cotizacion->refresh();
+    $this->parent->refresh();
 
     $this->numero_factura = '';
     $this->fecha_emision = today()->toDateString();
     $this->descripcion = '';
-    $this->monto_neto = (float) $this->cotizacion->base_gravada_calculada;
-    $this->iva = (float) $this->cotizacion->iva_calculado;
+    $this->monto_neto = (float) ($this->parent->base_gravada_calculada ?? 0);
+    $this->iva = (float) ($this->parent->iva_calculado ?? 0);
 
     session()->flash('status', 'Factura de venta eliminada.');
 };

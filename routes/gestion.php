@@ -34,6 +34,11 @@ Route::prefix('gestion')->group(function () {
 
         Route::get('facturas-venta/{facturaVenta}/archivo', FacturaVentaArchivoController::class)->name('facturas-venta.archivo');
 
+        Volt::route('proyectos', 'gestion.proyectos.index')->name('proyectos.index');
+        Volt::route('proyectos/crear', 'gestion.proyectos.form')->name('proyectos.create');
+        Volt::route('proyectos/{proyecto}/editar', 'gestion.proyectos.form')->name('proyectos.edit');
+        Volt::route('proyectos/{proyecto}', 'gestion.proyectos.show')->name('proyectos.show');
+
         Volt::route('contabilidad', 'gestion.contabilidad.index')->name('contabilidad.index');
     });
 });

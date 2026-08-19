@@ -9,8 +9,13 @@ use function Livewire\Volt\{computed, mount, state, usesFileUploads};
 
 usesFileUploads();
 
+// Componente reutilizable: gestiona los gastos de un "padre" (Cotización o Proyecto).
+// El padre solo necesita exponer la relación gastos(). La referencia (monto a comparar
+// para el margen) y su etiqueta las define quien lo incluye.
 state([
-    'cotizacion' => null,
+    'parent' => null,
+    'referenciaMonto' => 0,
+    'referenciaLabel' => 'Margen',
     'gastoId' => null,
     'fecha_gasto' => fn () => today()->toDateString(),
     'tipo' => TipoDocumentoGasto::Factura->value,
@@ -22,11 +27,13 @@ state([
     'nuevoComprobante' => null,
 ]);
 
-mount(function (Cotizacion $cotizacion) {
-    $this->cotizacion = $cotizacion;
+mount(function ($parent, float $referenciaMonto = 0, string $referenciaLabel = 'Margen') {
+    $this->parent = $parent;
+    $this->referenciaMonto = $referenciaMonto;
+    $this->referenciaLabel = $referenciaLabel;
 });
 
-$gastos = computed(fn () => $this->cotizacion->gastos()->latest('fecha_gasto')->get());
+$gastos = computed(fn () => $this->parent->gastos()->latest('fecha_gasto')->get());
 
 $resumen = computed(function () {
     $gastos = $this->gastos;
@@ -36,7 +43,7 @@ $resumen = computed(function () {
         'totalNeto' => $gastos->sum('monto_neto'),
         'totalIva' => $gastos->sum('iva'),
         'totalGastos' => $totalGastos,
-        'margen' => (float) $this->cotizacion->total_calculado - $totalGastos,
+        'margen' => (float) $this->referenciaMonto - $totalGastos,
     ];
 });
 
@@ -91,7 +98,7 @@ $guardar = function () {
 
     $gasto = $this->gastoId
         ? Gasto::findOrFail($this->gastoId)
-        : new Gasto(['cotizacion_id' => $this->cotizacion->id]);
+        : $this->parent->gastos()->make();
 
     $gasto->fill($datos);
 
@@ -147,18 +154,20 @@ $eliminar = function (Gasto $gasto) {
             <p class="text-xs text-gray-500">Total gastos</p>
             <p class="mt-1 text-sm font-semibold text-gray-900">${{ number_format($this->resumen['totalGastos'], 0, ',', '.') }}</p>
         </div>
-        <div @class([
-            'rounded-md p-3',
-            'bg-green-50' => $this->resumen['margen'] >= 0,
-            'bg-red-50' => $this->resumen['margen'] < 0,
-        ])>
-            <p class="text-xs text-gray-500">Margen vs. cotización</p>
-            <p @class([
-                'mt-1 text-sm font-semibold',
-                'text-green-700' => $this->resumen['margen'] >= 0,
-                'text-red-700' => $this->resumen['margen'] < 0,
-            ])>${{ number_format($this->resumen['margen'], 0, ',', '.') }}</p>
-        </div>
+        @if ($referenciaMonto > 0)
+            <div @class([
+                'rounded-md p-3',
+                'bg-green-50' => $this->resumen['margen'] >= 0,
+                'bg-red-50' => $this->resumen['margen'] < 0,
+            ])>
+                <p class="text-xs text-gray-500">{{ $referenciaLabel }}</p>
+                <p @class([
+                    'mt-1 text-sm font-semibold',
+                    'text-green-700' => $this->resumen['margen'] >= 0,
+                    'text-red-700' => $this->resumen['margen'] < 0,
+                ])>${{ number_format($this->resumen['margen'], 0, ',', '.') }}</p>
+            </div>
+        @endif
     </div>
 
     {{-- Tabla de gastos --}}
@@ -245,8 +254,8 @@ $eliminar = function (Gasto $gasto) {
             </div>
 
             <div class="mt-4">
-                <x-input-label for="descripcion" value="Descripción" />
-                <x-text-input id="descripcion" wire:model="descripcion" type="text" class="mt-1 block w-full" />
+                <x-input-label for="gasto_descripcion" value="Descripción" />
+                <x-text-input id="gasto_descripcion" wire:model="descripcion" type="text" class="mt-1 block w-full" />
                 <x-input-error :messages="$errors->get('descripcion')" class="mt-2" />
             </div>
 
