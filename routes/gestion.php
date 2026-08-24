@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Gestion\ActividadFotoController;
 use App\Http\Controllers\Gestion\CotizacionAdjuntoController;
 use App\Http\Controllers\Gestion\CotizacionPdfController;
 use App\Http\Controllers\Gestion\FacturaVentaArchivoController;
@@ -33,6 +34,8 @@ Route::prefix('gestion')->group(function () {
         Route::get('gastos/{gasto}/comprobante', GastoComprobanteController::class)->name('gastos.comprobante');
 
         Route::get('facturas-venta/{facturaVenta}/archivo', FacturaVentaArchivoController::class)->name('facturas-venta.archivo');
+
+        Route::get('actividad-fotos/{foto}', ActividadFotoController::class)->name('actividad-fotos.ver');
 
         Volt::route('proyectos', 'gestion.proyectos.index')->name('proyectos.index');
         Volt::route('proyectos/crear', 'gestion.proyectos.form')->name('proyectos.create');

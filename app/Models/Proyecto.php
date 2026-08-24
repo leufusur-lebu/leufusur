@@ -47,4 +47,9 @@ class Proyecto extends Model
     {
         return $this->hasOne(FacturaVenta::class);
     }
+
+    public function actividades(): HasMany
+    {
+        return $this->hasMany(Actividad::class)->orderByDesc('fecha')->orderByDesc('hora_inicio');
+    }
 }

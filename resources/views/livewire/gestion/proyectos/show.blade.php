@@ -125,6 +125,9 @@ $eliminar = function () {
                 :referencia-monto="(float) ($proyecto->facturaVenta?->total_calculado ?? 0)"
                 referencia-label="Margen vs. factura" :key="'gastos-proyecto-'.$proyecto->id" />
 
+            {{-- Bitácora de actividades --}}
+            <livewire:gestion.proyectos.bitacora :proyecto="$proyecto" :key="'bitacora-'.$proyecto->id" />
+
             <a href="{{ route('gestion.proyectos.index') }}" wire:navigate class="inline-block text-sm text-gray-600 hover:text-gray-900">
                 ← Volver a proyectos
             </a>
