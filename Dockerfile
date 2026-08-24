@@ -8,6 +8,9 @@ RUN apt-get update && apt-get install -y \
 # Instalar extensiones PHP
 RUN docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd zip
 
+# Límites de subida de archivos (fotos, comprobantes)
+COPY docker/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
