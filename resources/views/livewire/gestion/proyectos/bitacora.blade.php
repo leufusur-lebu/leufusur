@@ -177,8 +177,7 @@ $eliminar = function (Actividad $actividad) {
 
     {{-- Modal registrar/editar actividad --}}
     <x-modal name="actividad-modal" :show="$errors->isNotEmpty()">
-        <form wire:submit="guardar" class="p-6" x-data
-            x-on:open-modal.window="$event.detail === 'actividad-modal' && $nextTick(() => setTimeout(() => document.getElementById('act_hora_inicio')?.focus(), 150))">
+        <form wire:submit="guardar" class="p-6">
             <h2 class="text-lg font-medium text-gray-900">
                 {{ $actividadId ? 'Editar actividad' : 'Registrar actividad' }}
             </h2>
@@ -186,17 +185,17 @@ $eliminar = function (Actividad $actividad) {
             <div class="mt-4 grid gap-4 sm:grid-cols-3">
                 <div>
                     <x-input-label for="act_fecha" value="Fecha" />
-                    <x-text-input id="act_fecha" wire:model="fecha" type="date" class="mt-1 block w-full" />
+                    <x-date-picker id="act_fecha" model="fecha" class="mt-1" />
                     <x-input-error :messages="$errors->get('fecha')" class="mt-2" />
                 </div>
                 <div>
                     <x-input-label for="act_hora_inicio" value="Hora inicio" />
-                    <x-text-input id="act_hora_inicio" wire:model="hora_inicio" type="time" class="mt-1 block w-full" />
+                    <x-date-picker id="act_hora_inicio" model="hora_inicio" mode="time" class="mt-1" />
                     <x-input-error :messages="$errors->get('hora_inicio')" class="mt-2" />
                 </div>
                 <div>
                     <x-input-label for="act_hora_termino" value="Hora término" />
-                    <x-text-input id="act_hora_termino" wire:model="hora_termino" type="time" class="mt-1 block w-full" />
+                    <x-date-picker id="act_hora_termino" model="hora_termino" mode="time" class="mt-1" />
                     <x-input-error :messages="$errors->get('hora_termino')" class="mt-2" />
                 </div>
             </div>

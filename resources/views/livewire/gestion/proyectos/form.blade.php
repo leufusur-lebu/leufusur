@@ -87,7 +87,7 @@ $guardar = function () {
 
                     <div>
                         <x-input-label for="fecha_inicio" value="Fecha de inicio" />
-                        <x-text-input id="fecha_inicio" wire:model="fecha_inicio" type="date" class="mt-1 block w-full" />
+                        <x-date-picker id="fecha_inicio" model="fecha_inicio" class="mt-1" />
                         <x-input-error :messages="$errors->get('fecha_inicio')" class="mt-2" />
                     </div>
 

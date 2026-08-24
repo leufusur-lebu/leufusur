@@ -113,7 +113,7 @@ $eliminar = function () {
             </div>
             <div>
                 <x-input-label for="fecha_emision" value="Fecha de emisión" />
-                <x-text-input id="fecha_emision" wire:model="fecha_emision" type="date" class="mt-1 block w-full" />
+                <x-date-picker id="fecha_emision" model="fecha_emision" class="mt-1" />
                 <x-input-error :messages="$errors->get('fecha_emision')" class="mt-2" />
             </div>
         </div>

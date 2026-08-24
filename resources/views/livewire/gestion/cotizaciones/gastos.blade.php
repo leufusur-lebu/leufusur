@@ -225,7 +225,7 @@ $eliminar = function (Gasto $gasto) {
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                     <x-input-label for="fecha_gasto" value="Fecha del gasto" />
-                    <x-text-input id="fecha_gasto" wire:model="fecha_gasto" type="date" class="mt-1 block w-full" />
+                    <x-date-picker id="fecha_gasto" model="fecha_gasto" class="mt-1" />
                     <x-input-error :messages="$errors->get('fecha_gasto')" class="mt-2" />
                 </div>
                 <div>
