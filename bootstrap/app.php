@@ -16,16 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Detrás de Cloudflare + Traefik: confiar en el proxy para detectar el esquema
-        // real (X-Forwarded-Proto: https). Sin esto, Laravel ve la petición como http y
-        // genera las URLs firmadas (p. ej. la subida temporal de Livewire) como http,
-        // que el navegador bloquea por mixed-content en una página https.
+        // El esquema https detrás de Cloudflare se resuelve en public/index.php
+        // (Traefik sobrescribe X-Forwarded-Proto con http, así que confiar en el proxy
+        // no bastaría). Se confía en el proxy solo para el host/IP reales.
         $middleware->trustProxies(
             at: '*',
             headers: Request::HEADER_X_FORWARDED_FOR
-                | Request::HEADER_X_FORWARDED_HOST
-                | Request::HEADER_X_FORWARDED_PORT
-                | Request::HEADER_X_FORWARDED_PROTO,
+                | Request::HEADER_X_FORWARDED_HOST,
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
