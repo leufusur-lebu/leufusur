@@ -339,6 +339,19 @@ $eliminar = function (Gasto $gasto) {
                 </div>
             </div>
 
+            {{-- Sueldo empresarial --}}
+            <livewire:gestion.contabilidad.sueldos />
+
+            {{-- Acceso a la conciliación bancaria --}}
+            <a href="{{ route('gestion.conciliacion.index') }}" wire:navigate
+                class="flex items-center justify-between rounded-lg bg-white p-6 shadow-sm ring-1 ring-inset ring-teal-100 hover:ring-teal-300">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-900">Conciliación bancaria</h2>
+                    <p class="mt-1 text-xs text-gray-500">Registra los movimientos del banco, cuadra el saldo y vincúlalos con facturas, gastos y sueldos.</p>
+                </div>
+                <span class="text-sm font-medium text-teal-600">Abrir →</span>
+            </a>
+
             {{-- Gastos generales --}}
             <div class="overflow-hidden rounded-lg bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between">

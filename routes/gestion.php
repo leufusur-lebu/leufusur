@@ -43,5 +43,6 @@ Route::prefix('gestion')->group(function () {
         Volt::route('proyectos/{proyecto}', 'gestion.proyectos.show')->name('proyectos.show');
 
         Volt::route('contabilidad', 'gestion.contabilidad.index')->name('contabilidad.index');
+        Volt::route('conciliacion', 'gestion.conciliacion.index')->name('conciliacion.index');
     });
 });
