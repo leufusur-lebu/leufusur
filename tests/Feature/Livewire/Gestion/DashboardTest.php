@@ -4,6 +4,7 @@ use App\Enums\EstadoCotizacion;
 use App\Models\Cliente;
 use App\Models\Cotizacion;
 use App\Models\Gasto;
+use App\Models\MovimientoBancario;
 use App\Models\User;
 use Livewire\Volt\Volt;
 
@@ -42,6 +43,20 @@ test('shows correct aggregate statistics', function () {
     expect((float) $estadisticas['totalGastos'])->toBe(75000.0);
     // 2 clientes propios + 4 auto-generados por las cotizaciones de factory
     expect($estadisticas['totalClientes'])->toBe(6);
+});
+
+test('ingresos cobrados sums only reconciled abonos', function () {
+    $user = User::factory()->create();
+    MovimientoBancario::factory()->abono()->create(['monto' => 500000, 'conciliado' => true]);
+    MovimientoBancario::factory()->abono()->create(['monto' => 300000, 'conciliado' => true]);
+    MovimientoBancario::factory()->abono()->create(['monto' => 999999, 'conciliado' => false]); // no conciliado
+    MovimientoBancario::factory()->cargo()->create(['monto' => 111111, 'conciliado' => true]);   // es egreso
+
+    $this->actingAs($user);
+
+    $estadisticas = Volt::test('gestion.dashboard')->get('estadisticas');
+
+    expect($estadisticas['ingresosCobrados'])->toBe(800000.0);
 });
 
 test('shows the 5 most recent cotizaciones', function () {

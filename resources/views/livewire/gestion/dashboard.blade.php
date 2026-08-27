@@ -1,9 +1,11 @@
 <?php
 
 use App\Enums\EstadoCotizacion;
+use App\Enums\TipoMovimiento;
 use App\Models\Cliente;
 use App\Models\Cotizacion;
 use App\Models\Gasto;
+use App\Models\MovimientoBancario;
 
 use function Livewire\Volt\{computed, layout};
 
@@ -14,6 +16,7 @@ $estadisticas = computed(fn () => [
     'cotizacionesAprobadas' => Cotizacion::where('estado', EstadoCotizacion::Aprobada)->count(),
     'totalClientes' => Cliente::count(),
     'totalGastos' => Gasto::sum('total_calculado'),
+    'ingresosCobrados' => (float) MovimientoBancario::where('tipo', TipoMovimiento::Abono)->where('conciliado', true)->sum('monto'),
 ]);
 
 $ultimasCotizaciones = computed(fn () => Cotizacion::with('cliente')->latest()->limit(5)->get());
@@ -38,6 +41,19 @@ $ultimasCotizaciones = computed(fn () => Cotizacion::with('cliente')->latest()->
                     Ver todas las cotizaciones
                 </a>
             </div>
+
+            {{-- Ingresos cobrados (destacado) --}}
+            <a href="{{ route('gestion.conciliacion.index') }}" wire:navigate
+                class="block rounded-lg bg-white p-6 shadow-sm ring-1 ring-inset ring-teal-100 hover:ring-teal-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Ingresos cobrados</p>
+                        <p class="mt-2 text-3xl font-semibold text-teal-700">${{ number_format($this->estadisticas['ingresosCobrados'], 0, ',', '.') }}</p>
+                        <p class="mt-1 text-xs text-gray-400">Abonos conciliados en el banco</p>
+                    </div>
+                    <span class="text-sm font-medium text-teal-600">Ver conciliación →</span>
+                </div>
+            </a>
 
             {{-- Resumen --}}
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">

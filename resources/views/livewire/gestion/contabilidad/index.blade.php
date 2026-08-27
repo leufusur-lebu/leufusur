@@ -2,9 +2,11 @@
 
 use App\Enums\EstadoCotizacion;
 use App\Enums\TipoDocumentoGasto;
+use App\Enums\TipoMovimiento;
 use App\Models\Cotizacion;
 use App\Models\FacturaVenta;
 use App\Models\Gasto;
+use App\Models\MovimientoBancario;
 use App\Models\Proyecto;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -26,6 +28,19 @@ state([
     'iva' => 0,
     'nuevoComprobante' => null,
 ]);
+
+/**
+ * Ingresos cobrados: abonos del banco marcados como conciliados, por período.
+ */
+$ingresosCobrados = computed(function () {
+    $abonos = MovimientoBancario::where('tipo', TipoMovimiento::Abono)->where('conciliado', true)->get();
+
+    return [
+        'mes' => (float) $abonos->filter(fn (MovimientoBancario $m) => $m->fecha->isSameMonth(now()))->sum('monto'),
+        'anio' => (float) $abonos->filter(fn (MovimientoBancario $m) => $m->fecha->isSameYear(now()))->sum('monto'),
+        'total' => (float) $abonos->sum('monto'),
+    ];
+});
 
 /**
  * Resumen de IVA por período mensual con arrastre de remanente (lógica F29):
@@ -228,6 +243,29 @@ $eliminar = function (Gasto $gasto) {
             <div>
                 <h1 class="text-lg font-semibold text-gray-900">Contabilidad</h1>
                 <p class="mt-1 text-sm text-gray-500">IVA a pagar al SII y rentabilidad de los proyectos.</p>
+            </div>
+
+            {{-- Ingresos cobrados --}}
+            <div class="overflow-hidden rounded-lg bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-gray-900">Ingresos cobrados</h2>
+                    <a href="{{ route('gestion.conciliacion.index') }}" wire:navigate class="text-xs font-medium text-teal-600 hover:text-teal-500">Ver conciliación →</a>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Abonos del banco marcados como conciliados.</p>
+                <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div class="rounded-md bg-gray-50 p-4">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">Este mes</p>
+                        <p class="mt-1 text-xl font-semibold text-teal-700">${{ number_format($this->ingresosCobrados['mes'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="rounded-md bg-gray-50 p-4">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">Este año</p>
+                        <p class="mt-1 text-xl font-semibold text-teal-700">${{ number_format($this->ingresosCobrados['anio'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="rounded-md bg-gray-50 p-4">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">Total</p>
+                        <p class="mt-1 text-xl font-semibold text-gray-900">${{ number_format($this->ingresosCobrados['total'], 0, ',', '.') }}</p>
+                    </div>
+                </div>
             </div>
 
             {{-- Tarjetas resumen --}}

@@ -4,6 +4,7 @@ use App\Enums\EstadoCotizacion;
 use App\Models\Cotizacion;
 use App\Models\FacturaVenta;
 use App\Models\Gasto;
+use App\Models\MovimientoBancario;
 use App\Models\Proyecto;
 use App\Models\User;
 use Livewire\Volt\Volt;
@@ -247,4 +248,23 @@ test('proyecto factura and gastos feed the monthly iva summary', function () {
     expect($resumen[0]['debito'])->toBe(95000.0);
     expect($resumen[0]['credito'])->toBe(19000.0);
     expect($resumen[0]['aPagar'])->toBe(76000.0);
+});
+
+test('ingresos cobrados breaks down by mes, anio and total', function () {
+    $user = User::factory()->create();
+
+    // Este mes (conciliado)
+    MovimientoBancario::factory()->abono()->create(['monto' => 200000, 'conciliado' => true, 'fecha' => now()->toDateString()]);
+    // Este año pero mes distinto (conciliado)
+    MovimientoBancario::factory()->abono()->create(['monto' => 300000, 'conciliado' => true, 'fecha' => now()->startOfYear()->toDateString()]);
+    // No conciliado (no cuenta)
+    MovimientoBancario::factory()->abono()->create(['monto' => 900000, 'conciliado' => false, 'fecha' => now()->toDateString()]);
+
+    $this->actingAs($user);
+
+    $ingresos = Volt::test('gestion.contabilidad.index')->get('ingresosCobrados');
+
+    expect($ingresos['mes'])->toBe(200000.0);
+    expect($ingresos['anio'])->toBe(500000.0);
+    expect($ingresos['total'])->toBe(500000.0);
 });
