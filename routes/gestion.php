@@ -5,6 +5,7 @@ use App\Http\Controllers\Gestion\CotizacionAdjuntoController;
 use App\Http\Controllers\Gestion\CotizacionPdfController;
 use App\Http\Controllers\Gestion\FacturaVentaArchivoController;
 use App\Http\Controllers\Gestion\GastoComprobanteController;
+use App\Http\Controllers\Gestion\InformeController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -44,5 +45,8 @@ Route::prefix('gestion')->group(function () {
 
         Volt::route('contabilidad', 'gestion.contabilidad.index')->name('contabilidad.index');
         Volt::route('conciliacion', 'gestion.conciliacion.index')->name('conciliacion.index');
+
+        Volt::route('informes', 'gestion.informes.index')->name('informes.index');
+        Route::get('informes/{reporte}/{formato}', InformeController::class)->name('informes.export');
     });
 });
