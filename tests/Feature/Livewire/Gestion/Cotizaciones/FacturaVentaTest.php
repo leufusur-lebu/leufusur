@@ -138,3 +138,59 @@ test('archivo download works when a file is attached', function () {
         ->get(route('gestion.facturas-venta.archivo', $factura))
         ->assertOk();
 });
+
+test('can mark a factura de venta as pagada with fecha de pago', function () {
+    $user = User::factory()->create();
+    $cotizacion = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.cotizaciones.factura-venta', ['parent' => $cotizacion])
+        ->set('numero_factura', '5555')
+        ->set('fecha_emision', '2026-08-10')
+        ->set('monto_neto', 300000)
+        ->set('pagada', true)
+        ->set('fecha_pago', '2026-08-20')
+        ->call('guardar')
+        ->assertHasNoErrors();
+
+    $factura = $cotizacion->facturaVenta()->first();
+    expect($factura->pagada)->toBeTrue();
+    expect($factura->fecha_pago->toDateString())->toBe('2026-08-20');
+});
+
+test('marking pagada without a fecha defaults it to today', function () {
+    $user = User::factory()->create();
+    $cotizacion = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.cotizaciones.factura-venta', ['parent' => $cotizacion])
+        ->set('numero_factura', '5556')
+        ->set('fecha_emision', '2026-08-10')
+        ->set('monto_neto', 100000)
+        ->set('pagada', true)
+        ->set('fecha_pago', '')
+        ->call('guardar')
+        ->assertHasNoErrors();
+
+    expect($cotizacion->facturaVenta()->first()->fecha_pago->toDateString())->toBe(today()->toDateString());
+});
+
+test('unmarking pagada clears the fecha de pago', function () {
+    $user = User::factory()->create();
+    $cotizacion = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
+    FacturaVenta::factory()->create(['cotizacion_id' => $cotizacion->id, 'pagada' => true, 'fecha_pago' => '2026-08-01']);
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.cotizaciones.factura-venta', ['parent' => $cotizacion])
+        ->assertSet('pagada', true)
+        ->set('pagada', false)
+        ->call('guardar')
+        ->assertHasNoErrors();
+
+    $factura = $cotizacion->facturaVenta()->first();
+    expect($factura->pagada)->toBeFalse();
+    expect($factura->fecha_pago)->toBeNull();
+});

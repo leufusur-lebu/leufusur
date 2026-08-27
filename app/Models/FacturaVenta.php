@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'iva',
     'total_calculado',
     'archivo_pdf',
+    'pagada',
+    'fecha_pago',
 ])]
 class FacturaVenta extends Model
 {
@@ -33,6 +35,8 @@ class FacturaVenta extends Model
             'monto_neto' => 'decimal:2',
             'iva' => 'decimal:2',
             'total_calculado' => 'decimal:2',
+            'pagada' => 'boolean',
+            'fecha_pago' => 'date',
         ];
     }
 

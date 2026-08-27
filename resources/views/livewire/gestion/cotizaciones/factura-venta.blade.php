@@ -15,6 +15,8 @@ state([
     'descripcion' => '',
     'monto_neto' => 0,
     'iva' => 0,
+    'pagada' => false,
+    'fecha_pago' => '',
     'nuevoArchivo' => null,
 ]);
 
@@ -27,6 +29,8 @@ mount(function ($parent) {
         $this->descripcion = (string) $factura->descripcion;
         $this->monto_neto = (float) $factura->monto_neto;
         $this->iva = (float) $factura->iva;
+        $this->pagada = (bool) $factura->pagada;
+        $this->fecha_pago = $factura->fecha_pago?->toDateString() ?? '';
     } else {
         // Prefill con los montos cotizados si el padre es una cotización (normalmente se
         // factura lo cotizado, pero es editable). Un proyecto directo parte en cero.
@@ -48,10 +52,14 @@ $guardar = function () {
         'descripcion' => ['nullable', 'string', 'max:255'],
         'monto_neto' => ['required', 'numeric', 'min:0'],
         'iva' => ['required', 'numeric', 'min:0'],
+        'fecha_pago' => ['nullable', 'date'],
         'nuevoArchivo' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
     ]);
 
     $datos['total_calculado'] = $datos['monto_neto'] + $datos['iva'];
+    $datos['pagada'] = (bool) $this->pagada;
+    // Si se marca pagada sin fecha, se asume hoy; si no está pagada, se limpia la fecha.
+    $datos['fecha_pago'] = $datos['pagada'] ? ($datos['fecha_pago'] ?: today()->toDateString()) : null;
 
     $factura = $this->parent->facturaVenta ?? $this->parent->facturaVenta()->make();
     $factura->fill($datos);
@@ -80,6 +88,8 @@ $eliminar = function () {
     $this->descripcion = '';
     $this->monto_neto = (float) ($this->parent->base_gravada_calculada ?? 0);
     $this->iva = (float) ($this->parent->iva_calculado ?? 0);
+    $this->pagada = false;
+    $this->fecha_pago = '';
 
     session()->flash('status', 'Factura de venta eliminada.');
 };
@@ -89,15 +99,20 @@ $eliminar = function () {
 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
     <div class="flex items-center justify-between">
         <h2 class="text-sm font-semibold text-gray-900">Factura de venta (Leufu Sur)</h2>
-        @if ($this->factura)
-            <span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                Emitida
-            </span>
-        @else
-            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-                Pendiente
-            </span>
-        @endif
+        <div class="flex items-center gap-2">
+            @if ($this->factura)
+                <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">Emitida</span>
+                @if ($this->factura->pagada)
+                    <span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                        Pagada{{ $this->factura->fecha_pago ? ' · '.$this->factura->fecha_pago->format('d-m-Y') : '' }}
+                    </span>
+                @else
+                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">Por cobrar</span>
+                @endif
+            @else
+                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">Pendiente</span>
+            @endif
+        </div>
     </div>
 
     <p class="mt-1 text-xs text-gray-500">
@@ -149,6 +164,21 @@ $eliminar = function () {
                     class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-500">
                     📎 Ver archivo actual
                 </a>
+            @endif
+        </div>
+
+        {{-- Estado de pago (cobro) --}}
+        <div class="mt-4 rounded-md bg-gray-50 p-4">
+            <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input type="checkbox" wire:model.live="pagada" class="rounded border-gray-300 text-teal-600 focus:ring-teal-500">
+                Factura pagada (el cliente ya la canceló)
+            </label>
+            @if ($pagada)
+                <div class="mt-3 sm:w-56">
+                    <x-input-label for="fecha_pago" value="Fecha de pago" />
+                    <x-date-picker id="fecha_pago" model="fecha_pago" class="mt-1" />
+                    <x-input-error :messages="$errors->get('fecha_pago')" class="mt-2" />
+                </div>
             @endif
         </div>
 

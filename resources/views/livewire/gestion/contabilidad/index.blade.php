@@ -62,6 +62,20 @@ $totalesCompras = computed(function () {
 });
 
 /**
+ * Estado de cobro de las facturas de venta: facturado, cobrado (pagadas) y por cobrar.
+ */
+$cobros = computed(function () {
+    $facturas = FacturaVenta::with(['cotizacion', 'proyecto'])->get();
+
+    return [
+        'facturado' => (float) $facturas->sum('total_calculado'),
+        'cobrado' => (float) $facturas->where('pagada', true)->sum('total_calculado'),
+        'porCobrar' => (float) $facturas->where('pagada', false)->sum('total_calculado'),
+        'pendientes' => $facturas->where('pagada', false)->sortByDesc('fecha_emision')->values(),
+    ];
+});
+
+/**
  * Ingresos cobrados: abonos del banco marcados como conciliados, por período.
  */
 $ingresosCobrados = computed(function () {
@@ -332,6 +346,60 @@ $eliminar = function (Gasto $gasto) {
                         <p class="mt-1 text-xl font-semibold text-gray-900">${{ number_format($this->ingresosCobrados['total'], 0, ',', '.') }}</p>
                     </div>
                 </div>
+            </div>
+
+            {{-- Estado de cobro de las facturas de venta --}}
+            <div class="overflow-hidden rounded-lg bg-white p-6 shadow-sm">
+                <h2 class="text-sm font-semibold text-gray-900">Estado de cobro de facturas</h2>
+                <p class="mt-1 text-xs text-gray-500">Según lo marcado como pagado en cada factura de venta.</p>
+                <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div class="rounded-md bg-gray-50 p-4">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">Facturado</p>
+                        <p class="mt-1 text-xl font-semibold text-gray-900">${{ number_format($this->cobros['facturado'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="rounded-md bg-green-50 p-4">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">Cobrado</p>
+                        <p class="mt-1 text-xl font-semibold text-green-700">${{ number_format($this->cobros['cobrado'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="rounded-md bg-amber-50 p-4">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">Por cobrar</p>
+                        <p class="mt-1 text-xl font-semibold text-amber-700">${{ number_format($this->cobros['porCobrar'], 0, ',', '.') }}</p>
+                    </div>
+                </div>
+
+                @if ($this->cobros['pendientes']->isNotEmpty())
+                    <div class="mt-4 overflow-x-auto">
+                        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Facturas por cobrar</p>
+                        <table class="mt-2 min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Factura</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Origen</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Emisión</th>
+                                    <th class="py-2 pl-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach ($this->cobros['pendientes'] as $f)
+                                    <tr wire:key="porcobrar-{{ $f->id }}">
+                                        <td class="py-2 text-sm text-gray-700">N° {{ $f->numero_factura }}</td>
+                                        <td class="px-3 py-2 text-sm">
+                                            @if ($f->cotizacion)
+                                                <a href="{{ route('gestion.cotizaciones.show', $f->cotizacion) }}" wire:navigate class="text-teal-600 hover:text-teal-500">{{ $f->cotizacion->numero_cotizacion }}</a>
+                                            @elseif ($f->proyecto)
+                                                <a href="{{ route('gestion.proyectos.show', $f->proyecto) }}" wire:navigate class="text-teal-600 hover:text-teal-500">{{ $f->proyecto->nombre }}</a>
+                                            @else
+                                                <span class="text-gray-400">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 text-sm text-gray-500">{{ $f->fecha_emision->format('d-m-Y') }}</td>
+                                        <td class="py-2 pl-3 text-right text-sm text-gray-900">${{ number_format($f->total_calculado, 0, ',', '.') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
 
             {{-- Tarjetas resumen --}}

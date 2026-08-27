@@ -312,3 +312,21 @@ test('resultado subtracts gastos and sueldos from ingresos (neto)', function () 
     expect($resultado['sueldos'])->toBe(400000.0);
     expect($resultado['resultado'])->toBe(300000.0);
 });
+
+test('cobros splits facturado into cobrado and por cobrar', function () {
+    $user = User::factory()->create();
+    $c1 = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
+    $c2 = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
+
+    FacturaVenta::factory()->create(['cotizacion_id' => $c1->id, 'total_calculado' => 357000, 'pagada' => true]);
+    FacturaVenta::factory()->create(['cotizacion_id' => $c2->id, 'total_calculado' => 500000, 'pagada' => false]);
+
+    $this->actingAs($user);
+
+    $cobros = Volt::test('gestion.contabilidad.index')->get('cobros');
+
+    expect($cobros['facturado'])->toBe(857000.0);
+    expect($cobros['cobrado'])->toBe(357000.0);
+    expect($cobros['porCobrar'])->toBe(500000.0);
+    expect($cobros['pendientes'])->toHaveCount(1);
+});
