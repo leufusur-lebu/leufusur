@@ -30,6 +30,20 @@ state([
 ]);
 
 /**
+ * Todas las facturas de compra (gastos), vengan de cotización, proyecto o generales.
+ * Son las que suman el IVA crédito.
+ */
+$compras = computed(fn () => Gasto::with(['cotizacion', 'proyecto'])->latest('fecha_gasto')->get());
+
+$totalesCompras = computed(function () {
+    return [
+        'neto' => (float) $this->compras->sum('monto_neto'),
+        'iva' => (float) $this->compras->sum('iva'),
+        'total' => (float) $this->compras->sum('total_calculado'),
+    ];
+});
+
+/**
  * Ingresos cobrados: abonos del banco marcados como conciliados, por período.
  */
 $ingresosCobrados = computed(function () {
@@ -326,6 +340,68 @@ $eliminar = function (Gasto $gasto) {
                             @empty
                                 <tr>
                                     <td colspan="5" class="py-6 text-center text-sm text-gray-500">Aún no hay movimientos con IVA.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- Facturas de compra (todas: proyectos, cotizaciones y generales) --}}
+            <div class="overflow-hidden rounded-lg bg-white p-6 shadow-sm">
+                <h2 class="text-sm font-semibold text-gray-900">Facturas de compra</h2>
+                <p class="mt-1 text-xs text-gray-500">Todas las compras registradas (en proyectos, cotizaciones y generales). Suman el IVA crédito.</p>
+
+                <div class="mt-4 grid grid-cols-3 gap-3">
+                    <div class="rounded-md bg-gray-50 p-3">
+                        <p class="text-xs text-gray-500">Total neto</p>
+                        <p class="mt-1 text-sm font-semibold text-gray-900">${{ number_format($this->totalesCompras['neto'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="rounded-md bg-gray-50 p-3">
+                        <p class="text-xs text-gray-500">Total IVA</p>
+                        <p class="mt-1 text-sm font-semibold text-gray-900">${{ number_format($this->totalesCompras['iva'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="rounded-md bg-gray-50 p-3">
+                        <p class="text-xs text-gray-500">Total compras</p>
+                        <p class="mt-1 text-sm font-semibold text-gray-900">${{ number_format($this->totalesCompras['total'], 0, ',', '.') }}</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th class="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Fecha</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Proveedor</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Documento</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Origen</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Neto</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500">IVA</th>
+                                <th class="py-2 pl-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @forelse ($this->compras as $compra)
+                                <tr wire:key="compra-{{ $compra->id }}">
+                                    <td class="py-2 text-sm text-gray-500">{{ $compra->fecha_gasto->format('d-m-Y') }}</td>
+                                    <td class="px-3 py-2 text-sm text-gray-700">{{ $compra->proveedor }}</td>
+                                    <td class="px-3 py-2 text-sm text-gray-500">{{ $compra->numero_documento }}</td>
+                                    <td class="px-3 py-2 text-sm">
+                                        @if ($compra->cotizacion)
+                                            <a href="{{ route('gestion.cotizaciones.show', $compra->cotizacion) }}" wire:navigate class="text-teal-600 hover:text-teal-500">{{ $compra->cotizacion->numero_cotizacion }}</a>
+                                        @elseif ($compra->proyecto)
+                                            <a href="{{ route('gestion.proyectos.show', $compra->proyecto) }}" wire:navigate class="text-teal-600 hover:text-teal-500">{{ $compra->proyecto->nombre }}</a>
+                                        @else
+                                            <span class="text-gray-400">General</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-3 py-2 text-right text-sm text-gray-500">${{ number_format($compra->monto_neto, 0, ',', '.') }}</td>
+                                    <td class="px-3 py-2 text-right text-sm text-gray-500">${{ number_format($compra->iva, 0, ',', '.') }}</td>
+                                    <td class="py-2 pl-3 text-right text-sm text-gray-900">${{ number_format($compra->total_calculado, 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="py-6 text-center text-sm text-gray-500">Aún no hay facturas de compra registradas. Se ingresan dentro de cada cotización o proyecto.</td>
                                 </tr>
                             @endforelse
                         </tbody>

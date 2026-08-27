@@ -268,3 +268,25 @@ test('ingresos cobrados breaks down by mes, anio and total', function () {
     expect($ingresos['anio'])->toBe(500000.0);
     expect($ingresos['total'])->toBe(500000.0);
 });
+
+test('compras lists all gastos regardless of origin with totals', function () {
+    $user = User::factory()->create();
+    $cotizacion = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
+    $proyecto = Proyecto::factory()->create();
+
+    Gasto::factory()->create(['cotizacion_id' => $cotizacion->id, 'proyecto_id' => null, 'monto_neto' => 100000, 'iva' => 19000, 'total_calculado' => 119000, 'numero_documento' => 'C-1']);
+    Gasto::factory()->create(['cotizacion_id' => null, 'proyecto_id' => $proyecto->id, 'monto_neto' => 50000, 'iva' => 9500, 'total_calculado' => 59500, 'numero_documento' => 'P-1']);
+    Gasto::factory()->general()->create(['monto_neto' => 30000, 'iva' => 5700, 'total_calculado' => 35700, 'numero_documento' => 'G-1']);
+
+    $this->actingAs($user);
+
+    $componente = Volt::test('gestion.contabilidad.index');
+    $compras = $componente->get('compras');
+    $totales = $componente->get('totalesCompras');
+
+    // Las tres compras aparecen, sin importar el origen.
+    expect($compras->pluck('numero_documento')->all())->toContain('C-1', 'P-1', 'G-1');
+    expect($totales['neto'])->toBe(180000.0);
+    expect($totales['iva'])->toBe(34200.0);
+    expect($totales['total'])->toBe(214200.0);
+});
