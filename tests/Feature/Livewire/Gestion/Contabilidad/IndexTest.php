@@ -6,6 +6,7 @@ use App\Models\FacturaVenta;
 use App\Models\Gasto;
 use App\Models\MovimientoBancario;
 use App\Models\Proyecto;
+use App\Models\Sueldo;
 use App\Models\User;
 use Livewire\Volt\Volt;
 
@@ -289,4 +290,25 @@ test('compras lists all gastos regardless of origin with totals', function () {
     expect($totales['neto'])->toBe(180000.0);
     expect($totales['iva'])->toBe(34200.0);
     expect($totales['total'])->toBe(214200.0);
+});
+
+test('resultado subtracts gastos and sueldos from ingresos (neto)', function () {
+    $user = User::factory()->create();
+    $cotizacion = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
+
+    // Ingreso facturado neto 1.000.000
+    FacturaVenta::factory()->create(['cotizacion_id' => $cotizacion->id, 'monto_neto' => 1000000, 'iva' => 190000, 'total_calculado' => 1190000]);
+    // Gastos neto 300.000
+    Gasto::factory()->create(['cotizacion_id' => $cotizacion->id, 'monto_neto' => 300000, 'iva' => 57000, 'total_calculado' => 357000]);
+    // Sueldos 400.000
+    Sueldo::factory()->create(['monto' => 400000]);
+
+    $this->actingAs($user);
+
+    $resultado = Volt::test('gestion.contabilidad.index')->get('resultado');
+
+    expect($resultado['ingresos'])->toBe(1000000.0);
+    expect($resultado['gastos'])->toBe(300000.0);
+    expect($resultado['sueldos'])->toBe(400000.0);
+    expect($resultado['resultado'])->toBe(300000.0);
 });

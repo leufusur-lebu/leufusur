@@ -8,6 +8,7 @@ use App\Models\FacturaVenta;
 use App\Models\Gasto;
 use App\Models\MovimientoBancario;
 use App\Models\Proyecto;
+use App\Models\Sueldo;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
@@ -28,6 +29,23 @@ state([
     'iva' => 0,
     'nuevoComprobante' => null,
 ]);
+
+/**
+ * Resultado del negocio (utilidad), con montos netos (sin IVA, que es de traspaso):
+ * ingresos facturados − gastos − sueldos. Aquí es donde se descuenta el sueldo.
+ */
+$resultado = computed(function () {
+    $ingresos = (float) FacturaVenta::sum('monto_neto');
+    $gastos = (float) Gasto::sum('monto_neto');
+    $sueldos = (float) Sueldo::sum('monto');
+
+    return [
+        'ingresos' => $ingresos,
+        'gastos' => $gastos,
+        'sueldos' => $sueldos,
+        'resultado' => $ingresos - $gastos - $sueldos,
+    ];
+});
 
 /**
  * Todas las facturas de compra (gastos), vengan de cotización, proyecto o generales.
@@ -257,6 +275,40 @@ $eliminar = function (Gasto $gasto) {
             <div>
                 <h1 class="text-lg font-semibold text-gray-900">Contabilidad</h1>
                 <p class="mt-1 text-sm text-gray-500">IVA a pagar al SII y rentabilidad de los proyectos.</p>
+            </div>
+
+            {{-- Resultado del negocio (ingresos − gastos − sueldos) --}}
+            <div class="overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-inset ring-teal-100">
+                <h2 class="text-sm font-semibold text-gray-900">Resultado del negocio</h2>
+                <p class="mt-1 text-xs text-gray-500">Ingresos facturados menos gastos y sueldos (montos netos, sin IVA).</p>
+                <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                    <div class="grid flex-1 grid-cols-3 gap-3">
+                        <div class="rounded-md bg-gray-50 p-3">
+                            <p class="text-xs text-gray-500">Ingresos</p>
+                            <p class="mt-1 text-sm font-semibold text-green-700">${{ number_format($this->resultado['ingresos'], 0, ',', '.') }}</p>
+                        </div>
+                        <div class="rounded-md bg-gray-50 p-3">
+                            <p class="text-xs text-gray-500">− Gastos</p>
+                            <p class="mt-1 text-sm font-semibold text-red-700">${{ number_format($this->resultado['gastos'], 0, ',', '.') }}</p>
+                        </div>
+                        <div class="rounded-md bg-gray-50 p-3">
+                            <p class="text-xs text-gray-500">− Sueldos</p>
+                            <p class="mt-1 text-sm font-semibold text-red-700">${{ number_format($this->resultado['sueldos'], 0, ',', '.') }}</p>
+                        </div>
+                    </div>
+                    <div @class([
+                        'flex flex-col justify-center rounded-md px-5 py-3 sm:w-56',
+                        'bg-green-50' => $this->resultado['resultado'] >= 0,
+                        'bg-red-50' => $this->resultado['resultado'] < 0,
+                    ])>
+                        <p class="text-xs uppercase tracking-wide text-gray-500">= Resultado</p>
+                        <p @class([
+                            'mt-1 text-2xl font-semibold',
+                            'text-green-700' => $this->resultado['resultado'] >= 0,
+                            'text-red-700' => $this->resultado['resultado'] < 0,
+                        ])>${{ number_format($this->resultado['resultado'], 0, ',', '.') }}</p>
+                    </div>
+                </div>
             </div>
 
             {{-- Ingresos cobrados --}}
