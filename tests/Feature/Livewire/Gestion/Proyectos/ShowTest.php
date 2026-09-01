@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\EstadoProyecto;
+use App\Models\FacturaVenta;
 use App\Models\Gasto;
 use App\Models\Proyecto;
 use App\Models\User;
@@ -96,4 +97,120 @@ test('factura de venta attaches to the proyecto', function () {
     expect($factura->proyecto_id)->toBe($proyecto->id);
     expect($factura->cotizacion_id)->toBeNull();
     expect((float) $factura->total_calculado)->toBe(595000.0);
+});
+
+test('the show page renders the anticipo section', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('gestion.proyectos.show', $proyecto))
+        ->assertOk()
+        ->assertSee('Anticipo para iniciar');
+});
+
+test('prefills the anticipo fields from the proyecto on mount', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->conAnticipo(250000, '2026-08-20')->create();
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.proyectos.show', ['proyecto' => $proyecto])
+        ->assertSet('anticipo_monto', 250000.0)
+        ->assertSet('anticipo_pagado', true)
+        ->assertSet('anticipo_fecha_pago', '2026-08-20');
+});
+
+test('can register the anticipo with its payment date', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->create();
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.proyectos.show', ['proyecto' => $proyecto])
+        ->set('anticipo_monto', 300000)
+        ->set('anticipo_pagado', true)
+        ->set('anticipo_fecha_pago', '2026-08-25')
+        ->call('guardarAnticipo')
+        ->assertHasNoErrors();
+
+    $proyecto->refresh();
+    expect((float) $proyecto->anticipo_monto)->toBe(300000.0);
+    expect($proyecto->anticipo_pagado)->toBeTrue();
+    expect($proyecto->anticipo_fecha_pago->toDateString())->toBe('2026-08-25');
+});
+
+test('marking the anticipo as paid without a fecha defaults it to today', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->create();
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.proyectos.show', ['proyecto' => $proyecto])
+        ->set('anticipo_monto', 150000)
+        ->set('anticipo_pagado', true)
+        ->set('anticipo_fecha_pago', '')
+        ->call('guardarAnticipo')
+        ->assertHasNoErrors();
+
+    expect($proyecto->refresh()->anticipo_fecha_pago->toDateString())->toBe(today()->toDateString());
+});
+
+test('registering an unpaid anticipo leaves the fecha null', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->create();
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.proyectos.show', ['proyecto' => $proyecto])
+        ->set('anticipo_monto', 200000)
+        ->set('anticipo_pagado', false)
+        ->call('guardarAnticipo')
+        ->assertHasNoErrors();
+
+    $proyecto->refresh();
+    expect((float) $proyecto->anticipo_monto)->toBe(200000.0);
+    expect($proyecto->anticipo_pagado)->toBeFalse();
+    expect($proyecto->anticipo_fecha_pago)->toBeNull();
+});
+
+test('sugerirMitad fills half of the factura total', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->create();
+    FacturaVenta::factory()->create(['proyecto_id' => $proyecto->id, 'total_calculado' => 800000]);
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.proyectos.show', ['proyecto' => $proyecto])
+        ->call('sugerirMitad')
+        ->assertSet('anticipo_monto', 400000.0);
+});
+
+test('eliminarAnticipo clears the anticipo', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->conAnticipo(250000, '2026-08-20')->create();
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.proyectos.show', ['proyecto' => $proyecto])
+        ->call('eliminarAnticipo')
+        ->assertSet('anticipo_monto', 0)
+        ->assertSet('anticipo_pagado', false);
+
+    $proyecto->refresh();
+    expect($proyecto->anticipo_monto)->toBeNull();
+    expect($proyecto->anticipo_pagado)->toBeFalse();
+    expect($proyecto->anticipo_fecha_pago)->toBeNull();
+});
+
+test('anticipo_monto is required to save', function () {
+    $user = User::factory()->create();
+    $proyecto = Proyecto::factory()->create();
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.proyectos.show', ['proyecto' => $proyecto])
+        ->set('anticipo_monto', '')
+        ->call('guardarAnticipo')
+        ->assertHasErrors(['anticipo_monto']);
 });

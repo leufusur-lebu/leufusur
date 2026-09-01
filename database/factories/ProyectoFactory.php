@@ -27,4 +27,16 @@ class ProyectoFactory extends Factory
             'estado' => EstadoProyecto::Activo,
         ];
     }
+
+    /**
+     * Proyecto con el anticipo (50% inicial) ya pagado.
+     */
+    public function conAnticipo(float $monto = 250000, ?string $fecha = null): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'anticipo_monto' => $monto,
+            'anticipo_pagado' => true,
+            'anticipo_fecha_pago' => $fecha ?? now()->toDateString(),
+        ]);
+    }
 }

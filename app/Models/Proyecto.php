@@ -17,6 +17,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'descripcion',
     'fecha_inicio',
     'estado',
+    'anticipo_monto',
+    'anticipo_pagado',
+    'anticipo_fecha_pago',
 ])]
 class Proyecto extends Model
 {
@@ -30,6 +33,9 @@ class Proyecto extends Model
         return [
             'fecha_inicio' => 'date',
             'estado' => EstadoProyecto::class,
+            'anticipo_monto' => 'decimal:2',
+            'anticipo_pagado' => 'boolean',
+            'anticipo_fecha_pago' => 'date',
         ];
     }
 
