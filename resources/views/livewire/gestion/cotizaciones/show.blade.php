@@ -259,8 +259,12 @@ $eliminar = function () {
                 </ul>
             </div>
 
-            {{-- Facturación y gastos: solo cuando la cotización está aprobada --}}
+            {{-- Anticipo, facturación y gastos: solo cuando la cotización está aprobada --}}
             @if ($cotizacion->estado === EstadoCotizacion::Aprobada)
+                {{-- El 50% y el saldo se calculan sobre el total cotizado (disponible desde la aprobación). --}}
+                <livewire:gestion.anticipo :parent="$cotizacion"
+                    :referencia-monto="(float) ($cotizacion->total_calculado ?? 0)"
+                    referencia-label="la cotización" :key="'anticipo-'.$cotizacion->id" />
                 <livewire:gestion.cotizaciones.factura-venta :parent="$cotizacion" :key="'factura-venta-'.$cotizacion->id" />
                 <livewire:gestion.cotizaciones.gastos :parent="$cotizacion" :referencia-monto="(float) ($cotizacion->total_calculado ?? 0)"
                     referencia-label="Margen vs. cotización" :key="'gastos-'.$cotizacion->id" />

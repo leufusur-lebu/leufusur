@@ -26,6 +26,9 @@ use RuntimeException;
     'estado',
     'id_mercado_publico',
     'archivo_adjunto',
+    'anticipo_monto',
+    'anticipo_pagado',
+    'anticipo_fecha_pago',
 ])]
 class Cotizacion extends Model
 {
@@ -56,6 +59,9 @@ class Cotizacion extends Model
             'enviada_en' => 'datetime',
             'aprobada_en' => 'datetime',
             'rechazada_en' => 'datetime',
+            'anticipo_monto' => 'decimal:2',
+            'anticipo_pagado' => 'boolean',
+            'anticipo_fecha_pago' => 'date',
         ];
     }
 
