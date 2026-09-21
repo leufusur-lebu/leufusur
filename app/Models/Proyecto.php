@@ -54,6 +54,20 @@ class Proyecto extends Model
         return $this->hasOne(FacturaVenta::class);
     }
 
+    /**
+     * Un proyecto directo no tiene monto cotizado: la factura parte en cero.
+     * (El componente compartido de factura-venta usa este contrato.)
+     */
+    public function netoParaFactura(): float
+    {
+        return 0.0;
+    }
+
+    public function ivaParaFactura(): float
+    {
+        return 0.0;
+    }
+
     public function actividades(): HasMany
     {
         return $this->hasMany(Actividad::class)->orderByDesc('fecha')->orderByDesc('hora_inicio');

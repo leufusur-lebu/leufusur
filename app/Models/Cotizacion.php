@@ -85,6 +85,36 @@ class Cotizacion extends Model
         return $this->hasOne(FacturaVenta::class);
     }
 
+    public function ampliaciones(): HasMany
+    {
+        return $this->hasMany(Ampliacion::class)->latest('fecha');
+    }
+
+    /**
+     * Neto a facturar: base gravada cotizada + neto de las ampliaciones.
+     * Usado para prellenar la factura de venta (ver componente factura-venta).
+     */
+    public function netoParaFactura(): float
+    {
+        return (float) $this->base_gravada_calculada + (float) $this->ampliaciones()->sum('subtotal_calculado');
+    }
+
+    /**
+     * IVA a facturar: IVA cotizado + IVA de las ampliaciones.
+     */
+    public function ivaParaFactura(): float
+    {
+        return (float) $this->iva_calculado + (float) $this->ampliaciones()->sum('iva_calculado');
+    }
+
+    /**
+     * Total a cobrar considerando las ampliaciones (base para anticipo y margen).
+     */
+    public function totalConAmpliaciones(): float
+    {
+        return (float) $this->total_calculado + (float) $this->ampliaciones()->sum('total_calculado');
+    }
+
     /**
      * Genera el siguiente número correlativo del día: CTZ-YYYYMMDD-XXX.
      */

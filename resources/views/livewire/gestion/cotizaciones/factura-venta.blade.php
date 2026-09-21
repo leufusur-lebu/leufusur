@@ -32,10 +32,10 @@ mount(function ($parent) {
         $this->pagada = (bool) $factura->pagada;
         $this->fecha_pago = $factura->fecha_pago?->toDateString() ?? '';
     } else {
-        // Prefill con los montos cotizados si el padre es una cotización (normalmente se
-        // factura lo cotizado, pero es editable). Un proyecto directo parte en cero.
-        $this->monto_neto = (float) ($parent->base_gravada_calculada ?? 0);
-        $this->iva = (float) ($parent->iva_calculado ?? 0);
+        // Prefill con lo que corresponde facturar del padre (una cotización suma sus
+        // ampliaciones; un proyecto directo parte en cero). Editable de todos modos.
+        $this->monto_neto = $parent->netoParaFactura();
+        $this->iva = $parent->ivaParaFactura();
     }
 });
 

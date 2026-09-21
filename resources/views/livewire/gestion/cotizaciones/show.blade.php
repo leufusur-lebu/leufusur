@@ -259,15 +259,16 @@ $eliminar = function () {
                 </ul>
             </div>
 
-            {{-- Anticipo, facturación y gastos: solo cuando la cotización está aprobada --}}
+            {{-- Anticipo, ampliaciones, facturación y gastos: solo cuando la cotización está aprobada.
+                 El anticipo/margen se calculan sobre el total con ampliaciones incluidas. --}}
             @if ($cotizacion->estado === EstadoCotizacion::Aprobada)
-                {{-- El 50% y el saldo se calculan sobre el total cotizado (disponible desde la aprobación). --}}
                 <livewire:gestion.anticipo :parent="$cotizacion"
-                    :referencia-monto="(float) ($cotizacion->total_calculado ?? 0)"
+                    :referencia-monto="$cotizacion->totalConAmpliaciones()"
                     referencia-label="la cotización" :key="'anticipo-'.$cotizacion->id" />
+                <livewire:gestion.cotizaciones.ampliaciones :cotizacion="$cotizacion" :key="'ampliaciones-'.$cotizacion->id" />
                 <livewire:gestion.cotizaciones.factura-venta :parent="$cotizacion" :key="'factura-venta-'.$cotizacion->id" />
-                <livewire:gestion.cotizaciones.gastos :parent="$cotizacion" :referencia-monto="(float) ($cotizacion->total_calculado ?? 0)"
-                    referencia-label="Margen vs. cotización" :key="'gastos-'.$cotizacion->id" />
+                <livewire:gestion.cotizaciones.gastos :parent="$cotizacion" :referencia-monto="$cotizacion->totalConAmpliaciones()"
+                    referencia-label="Margen vs. total" :key="'gastos-'.$cotizacion->id" />
             @endif
 
             <a href="{{ route('gestion.cotizaciones.index') }}" wire:navigate class="inline-block text-sm text-gray-600 hover:text-gray-900">
