@@ -224,11 +224,11 @@
                             particulares, empresas e instituciones públicas.
                         </p>
                         <div class="mt-8 flex flex-col gap-4 sm:flex-row">
-                            <a href="mailto:contacto@leufusur.cl"
+                            <a href="mailto:leufusurspa@icloud.com"
                                 class="rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 px-7 py-3.5 text-center text-sm font-semibold text-white shadow-lg shadow-teal-500/20 transition hover:from-teal-400 hover:to-cyan-400">
                                 Escríbenos
                             </a>
-                            <a href="tel:+56912345678"
+                            <a href="tel:+56962471305"
                                 class="rounded-xl border border-white/20 bg-white/5 px-7 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-white/10">
                                 Llamar
                             </a>
@@ -238,7 +238,7 @@
                     {{-- Datos de contacto --}}
                     <div class="grid gap-4 sm:grid-cols-2">
                         {{-- Correo --}}
-                        <a href="mailto:contacto@leufusur.cl"
+                        <a href="mailto:leufusurspa@icloud.com"
                             class="rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-6 w-6 text-teal-400">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -249,7 +249,7 @@
                         </a>
 
                         {{-- Teléfono --}}
-                        <a href="tel:+56912345678"
+                        <a href="tel:+56962471305"
                             class="rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-6 w-6 text-teal-400">
                                 <path stroke-linecap="round" stroke-linejoin="round"

@@ -105,8 +105,8 @@
                 <div>
                     <h3 class="text-sm font-semibold text-slate-900">Contacto</h3>
                     <ul class="mt-4 space-y-2.5 text-sm text-slate-500">
-                        <li><a href="mailto:contacto@leufusur.cl" class="transition hover:text-teal-600">contacto@leufusur.cl</a></li>
-                        <li><a href="tel:+56912345678" class="transition hover:text-teal-600">+56 9 1234 5678</a></li>
+                        <li><a href="mailto:leufusurspa@icloud.com" class="transition hover:text-teal-600">leufusurspa@icloud.com</a></li>
+                        <li><a href="tel:+56962471305" class="transition hover:text-teal-600">+56 9 6247 1305</a></li>
                         <li>Sur de Chile</li>
                     </ul>
                 </div>
