@@ -200,7 +200,7 @@ $guardar = function () {
         'lineas.*.descripcion' => ['required', 'string', 'max:255'],
         'lineas.*.detalle_extendido' => ['nullable', 'string', 'max:20000'],
         'lineas.*.unidad' => ['required', 'string', 'max:20'],
-        'lineas.*.cantidad' => ['required', 'numeric', 'min:0.01'],
+        'lineas.*.cantidad' => ['required', 'integer', 'min:1'],
         'lineas.*.valor_unitario' => ['required', 'numeric', 'min:0'],
     ]);
 
@@ -393,7 +393,7 @@ $guardar = function () {
                                                 <x-input-error :messages="$errors->get('lineas.'.$indice.'.unidad')" class="mt-1" />
                                             </div>
                                             <div class="sm:w-24">
-                                                <input type="number" step="0.01" min="0"
+                                                <input type="number" step="1" min="1" inputmode="numeric"
                                                     wire:model.live="lineas.{{ $indice }}.cantidad" placeholder="Cantidad"
                                                     class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
                                                 <x-input-error :messages="$errors->get('lineas.'.$indice.'.cantidad')" class="mt-1" />

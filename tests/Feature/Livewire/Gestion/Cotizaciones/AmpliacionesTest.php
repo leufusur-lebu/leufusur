@@ -201,3 +201,19 @@ test('deleting a cotizacion cascades to its ampliaciones and their lineas', func
     $this->assertDatabaseMissing('ampliaciones', ['id' => $ampliacion->id]);
     $this->assertDatabaseMissing('lineas_ampliacion', ['ampliacion_id' => $ampliacion->id]);
 });
+
+test('la cantidad de una linea de ampliacion debe ser entera', function () {
+    $user = User::factory()->create();
+    $cotizacion = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.cotizaciones.ampliaciones', ['cotizacion' => $cotizacion])
+        ->call('prepararNueva')
+        ->set('descripcion', 'Adicional')
+        ->set('lineas.0.descripcion', 'Ítem')
+        ->set('lineas.0.cantidad', 1.5)
+        ->set('lineas.0.valor_unitario', 1000)
+        ->call('guardar')
+        ->assertHasErrors(['lineas.0.cantidad']);
+});

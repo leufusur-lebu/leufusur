@@ -137,3 +137,20 @@ test('can update an existing borrador', function () {
     expect($cotizacion->lineas->first()->descripcion)->toBe('Nueva línea');
     expect((float) $cotizacion->subtotal_calculado)->toBe(60000.0);
 });
+
+test('la cantidad de una linea debe ser un numero entero', function () {
+    $user = User::factory()->create();
+    $cliente = Cliente::factory()->create();
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.cotizaciones.form')
+        ->set('cliente_id', $cliente->id)
+        ->set('descripcion', 'Prueba')
+        ->set('fecha_vencimiento', today()->addDays(10)->toDateString())
+        ->set('lineas.0.descripcion', 'Ítem')
+        ->set('lineas.0.cantidad', 2.5)
+        ->set('lineas.0.valor_unitario', 1000)
+        ->call('guardar')
+        ->assertHasErrors(['lineas.0.cantidad']);
+});
