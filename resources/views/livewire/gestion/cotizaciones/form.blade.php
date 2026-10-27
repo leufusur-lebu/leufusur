@@ -3,6 +3,7 @@
 use App\Enums\EstadoCotizacion;
 use App\Models\Cliente;
 use App\Models\Cotizacion;
+use App\Models\CotizacionBorrador;
 use Illuminate\Support\Str;
 
 use function Livewire\Volt\{computed, layout, mount, state, usesFileUploads};
@@ -23,37 +24,60 @@ state([
     'lineas' => fn () => [
         ['_key' => (string) Str::uuid(), 'descripcion' => '', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0],
     ],
+    'borradorRecuperado' => false,
+    'borradorFecha' => null,
 ]);
 
 mount(function (?Cotizacion $cotizacion = null) {
-    if (! $cotizacion?->exists) {
-        return;
+    if ($cotizacion?->exists) {
+        if (! $cotizacion->estado->esEditable()) {
+            $this->redirectRoute('gestion.cotizaciones.show', $cotizacion, navigate: true);
+
+            return;
+        }
+
+        $this->cotizacion = $cotizacion;
+        $this->cliente_id = $cotizacion->cliente_id;
+        $this->clienteSearch = $cotizacion->cliente->nombre;
+        $this->descripcion = $cotizacion->descripcion;
+        $this->fecha_emision = $cotizacion->fecha_emision->toDateString();
+        $this->fecha_vencimiento = $cotizacion->fecha_vencimiento->toDateString();
+        $this->descuento_porcentaje = (float) $cotizacion->descuento_porcentaje;
+        $this->id_mercado_publico = $cotizacion->id_mercado_publico ?? '';
+
+        $this->lineas = $cotizacion->lineas->map(fn ($linea) => [
+            '_key' => (string) Str::uuid(),
+            'descripcion' => $linea->descripcion,
+            'detalle_extendido' => $linea->detalle_extendido ?? '',
+            'mostrar_detalle' => filled($linea->detalle_extendido),
+            'unidad' => $linea->unidad,
+            'cantidad' => (float) $linea->cantidad,
+            'valor_unitario' => (float) $linea->valor_unitario,
+        ])->all();
     }
 
-    if (! $cotizacion->estado->esEditable()) {
-        $this->redirectRoute('gestion.cotizaciones.show', $cotizacion, navigate: true);
+    // Recuperar un borrador sin guardar (nuevo => cotizacion_id null; edición => su id).
+    $borrador = CotizacionBorrador::where('user_id', auth()->id())
+        ->where('cotizacion_id', $this->cotizacion?->id)
+        ->first();
 
-        return;
+    if ($borrador) {
+        $p = $borrador->payload;
+        $this->cliente_id = $p['cliente_id'] ?? $this->cliente_id;
+        $this->clienteSearch = $p['clienteSearch'] ?? $this->clienteSearch;
+        $this->descripcion = $p['descripcion'] ?? $this->descripcion;
+        $this->fecha_emision = $p['fecha_emision'] ?? $this->fecha_emision;
+        $this->fecha_vencimiento = $p['fecha_vencimiento'] ?? $this->fecha_vencimiento;
+        $this->descuento_porcentaje = $p['descuento_porcentaje'] ?? $this->descuento_porcentaje;
+        $this->id_mercado_publico = $p['id_mercado_publico'] ?? $this->id_mercado_publico;
+
+        if (! empty($p['lineas']) && is_array($p['lineas'])) {
+            $this->lineas = $p['lineas'];
+        }
+
+        $this->borradorRecuperado = true;
+        $this->borradorFecha = $borrador->updated_at->format('d-m-Y H:i');
     }
-
-    $this->cotizacion = $cotizacion;
-    $this->cliente_id = $cotizacion->cliente_id;
-    $this->clienteSearch = $cotizacion->cliente->nombre;
-    $this->descripcion = $cotizacion->descripcion;
-    $this->fecha_emision = $cotizacion->fecha_emision->toDateString();
-    $this->fecha_vencimiento = $cotizacion->fecha_vencimiento->toDateString();
-    $this->descuento_porcentaje = (float) $cotizacion->descuento_porcentaje;
-    $this->id_mercado_publico = $cotizacion->id_mercado_publico ?? '';
-
-    $this->lineas = $cotizacion->lineas->map(fn ($linea) => [
-        '_key' => (string) Str::uuid(),
-        'descripcion' => $linea->descripcion,
-        'detalle_extendido' => $linea->detalle_extendido ?? '',
-        'mostrar_detalle' => filled($linea->detalle_extendido),
-        'unidad' => $linea->unidad,
-        'cantidad' => (float) $linea->cantidad,
-        'valor_unitario' => (float) $linea->valor_unitario,
-    ])->all();
 });
 
 $clientesSugeridos = computed(function () {
@@ -109,6 +133,52 @@ $resumen = computed(function () {
         'total' => $baseGravada + $iva,
     ];
 });
+
+$guardarBorrador = function () {
+    // Autoguardado silencioso: persiste el estado actual aunque esté incompleto (no valida).
+    $tieneContenido = filled($this->descripcion)
+        || $this->cliente_id
+        || filled($this->id_mercado_publico)
+        || collect($this->lineas)->contains(
+            fn ($linea) => filled($linea['descripcion'] ?? '') || (float) ($linea['valor_unitario'] ?? 0) > 0
+        );
+
+    if (! $tieneContenido) {
+        $this->skipRender();
+
+        return;
+    }
+
+    CotizacionBorrador::updateOrCreate(
+        ['user_id' => auth()->id(), 'cotizacion_id' => $this->cotizacion?->id],
+        ['payload' => [
+            'cliente_id' => $this->cliente_id,
+            'clienteSearch' => $this->clienteSearch,
+            'descripcion' => $this->descripcion,
+            'fecha_emision' => $this->fecha_emision,
+            'fecha_vencimiento' => $this->fecha_vencimiento,
+            'descuento_porcentaje' => $this->descuento_porcentaje,
+            'id_mercado_publico' => $this->id_mercado_publico,
+            'lineas' => $this->lineas,
+        ]],
+    );
+
+    // No re-renderizar: el cliente ya tiene estos valores; evita saltos mientras se escribe.
+    $this->skipRender();
+};
+
+$descartarBorrador = function () {
+    CotizacionBorrador::where('user_id', auth()->id())
+        ->where('cotizacion_id', $this->cotizacion?->id)
+        ->delete();
+
+    // Re-montar limpio: en edición vuelve a los valores guardados; en nuevo queda en blanco.
+    if ($this->cotizacion) {
+        $this->redirectRoute('gestion.cotizaciones.edit', $this->cotizacion, navigate: true);
+    } else {
+        $this->redirectRoute('gestion.cotizaciones.create', navigate: true);
+    }
+};
 
 $guardar = function () {
     if ($this->cotizacion && ! $this->cotizacion->fresh()->estado->esEditable()) {
@@ -188,6 +258,11 @@ $guardar = function () {
 
     $cotizacion->recalcularTotales();
 
+    // Ya guardada: elimina el borrador autoguardado de este formulario.
+    CotizacionBorrador::where('user_id', auth()->id())
+        ->where('cotizacion_id', $this->cotizacion?->id)
+        ->delete();
+
     session()->flash('status', $this->cotizacion ? 'Cotización actualizada.' : 'Cotización creada.');
 
     $this->redirectRoute('gestion.cotizaciones.show', $cotizacion, navigate: true);
@@ -199,14 +274,42 @@ $guardar = function () {
     <div class="py-12">
         <div class="mx-auto max-w-4xl sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h1 class="text-lg font-semibold text-gray-900">
-                        {{ $cotizacion ? 'Editar cotización '.$cotizacion->numero_cotizacion : 'Nueva cotización' }}
-                    </h1>
+                <div class="p-6"
+                    x-data="{
+                        estado: '',
+                        autosave() {
+                            this.estado = 'Guardando…';
+                            this.$wire.guardarBorrador()
+                                .then(() => {
+                                    this.estado = '✓ Guardado ' + new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+                                })
+                                .catch(() => { this.estado = ''; });
+                        },
+                    }"
+                    x-on:input.debounce.800ms="autosave()"
+                    x-on:change.debounce.800ms="autosave()"
+                    x-on:trix-change.debounce.800ms="autosave()">
+                    <div class="flex items-center justify-between gap-3">
+                        <h1 class="text-lg font-semibold text-gray-900">
+                            {{ $cotizacion ? 'Editar cotización '.$cotizacion->numero_cotizacion : 'Nueva cotización' }}
+                        </h1>
+                        <span class="shrink-0 text-xs text-gray-400" x-text="estado"></span>
+                    </div>
 
                     @if (session('error'))
                         <div class="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
                             {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if ($borradorRecuperado)
+                        <div class="mt-4 flex items-center justify-between gap-3 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                            <span>Recuperamos un borrador sin guardar ({{ $borradorFecha }}).</span>
+                            <button type="button" wire:click="descartarBorrador"
+                                wire:confirm="¿Descartar el borrador recuperado?"
+                                class="shrink-0 font-medium text-amber-900 underline hover:text-amber-700">
+                                Descartar
+                            </button>
                         </div>
                     @endif
 
