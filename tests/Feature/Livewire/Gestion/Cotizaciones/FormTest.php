@@ -16,9 +16,27 @@ test('clearing a linea quantity or price while typing does not crash the preview
     $this->actingAs($user);
 
     Volt::test('gestion.cotizaciones.form')
-        ->set('lineas.0.cantidad', '')
-        ->set('lineas.0.valor_unitario', '')
+        ->set('lineas', ['a' => ['descripcion' => '', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => '', 'valor_unitario' => '']])
         ->assertOk();
+});
+
+test('eliminar una linea del medio conserva las demas con sus valores', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $component = Volt::test('gestion.cotizaciones.form')
+        ->set('lineas', [
+            'a' => ['descripcion' => 'AAA', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 1000],
+            'b' => ['descripcion' => 'BBB', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 1000],
+            'c' => ['descripcion' => 'CCC', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 1000],
+        ])
+        ->call('eliminarLinea', 'b');
+
+    $lineas = $component->get('lineas');
+
+    expect(array_keys($lineas))->toBe(['a', 'c']);
+    expect($lineas['a']['descripcion'])->toBe('AAA');
+    expect($lineas['c']['descripcion'])->toBe('CCC');
 });
 
 test('can render the create form', function () {
@@ -97,10 +115,12 @@ test('editing a borrador pre-fills the form', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.form', ['cotizacion' => $cotizacion])
+    $lineas = Volt::test('gestion.cotizaciones.form', ['cotizacion' => $cotizacion])
         ->assertSet('descripcion', 'Cotización original')
         ->assertSet('cliente_id', $cotizacion->cliente_id)
-        ->assertSet('lineas.0.descripcion', 'Servicio A');
+        ->get('lineas');
+
+    expect(collect($lineas)->first()['descripcion'])->toBe('Servicio A');
 });
 
 test('editing a non-borrador cotizacion redirects to the show page', function () {
@@ -148,9 +168,7 @@ test('la cantidad de una linea debe ser un numero entero', function () {
         ->set('cliente_id', $cliente->id)
         ->set('descripcion', 'Prueba')
         ->set('fecha_vencimiento', today()->addDays(10)->toDateString())
-        ->set('lineas.0.descripcion', 'Ítem')
-        ->set('lineas.0.cantidad', 2.5)
-        ->set('lineas.0.valor_unitario', 1000)
+        ->set('lineas', ['a' => ['descripcion' => 'Ítem', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 2.5, 'valor_unitario' => 1000]])
         ->call('guardar')
-        ->assertHasErrors(['lineas.0.cantidad']);
+        ->assertHasErrors(['lineas.a.cantidad']);
 });

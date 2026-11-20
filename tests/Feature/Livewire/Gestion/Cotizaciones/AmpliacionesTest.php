@@ -34,13 +34,9 @@ test('can register an ampliacion with its lineas and computed totals', function 
     $this->actingAs($user);
 
     Volt::test('gestion.cotizaciones.ampliaciones', ['cotizacion' => $cotizacion])
-        ->call('prepararNueva')
         ->set('descripcion', 'Refuerzo de cableado no considerado')
         ->set('fecha', '2026-09-10')
-        ->set('lineas.0.descripcion', 'Cable UTP extra')
-        ->set('lineas.0.unidad', 'MT')
-        ->set('lineas.0.cantidad', 50)
-        ->set('lineas.0.valor_unitario', 1200)
+        ->set('lineas', ['a' => ['descripcion' => 'Cable UTP extra', 'unidad' => 'MT', 'cantidad' => 50, 'valor_unitario' => 1200]])
         ->call('guardar')
         ->assertHasNoErrors();
 
@@ -61,16 +57,11 @@ test('can add multiple lineas that sum into the ampliacion total', function () {
     $this->actingAs($user);
 
     Volt::test('gestion.cotizaciones.ampliaciones', ['cotizacion' => $cotizacion])
-        ->call('prepararNueva')
         ->set('descripcion', 'Adicionales varios')
-        ->set('lineas.0.descripcion', 'Cable UTP extra')
-        ->set('lineas.0.cantidad', 50)
-        ->set('lineas.0.valor_unitario', 1200)
-        ->call('agregarLinea')
-        ->set('lineas.1.descripcion', 'Horas técnico')
-        ->set('lineas.1.unidad', 'HH')
-        ->set('lineas.1.cantidad', 4)
-        ->set('lineas.1.valor_unitario', 15000)
+        ->set('lineas', [
+            'a' => ['descripcion' => 'Cable UTP extra', 'unidad' => 'UN', 'cantidad' => 50, 'valor_unitario' => 1200],
+            'b' => ['descripcion' => 'Horas técnico', 'unidad' => 'HH', 'cantidad' => 4, 'valor_unitario' => 15000],
+        ])
         ->call('guardar')
         ->assertHasNoErrors();
 
@@ -90,16 +81,21 @@ test('can edit an ampliacion and replace its lineas', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.ampliaciones', ['cotizacion' => $cotizacion])
+    $component = Volt::test('gestion.cotizaciones.ampliaciones', ['cotizacion' => $cotizacion])
         ->call('editar', $ampliacion->id)
         ->assertSet('descripcion', 'Original')
-        ->assertCount('lineas', 3)
-        ->call('eliminarLinea', 2)
-        ->call('eliminarLinea', 1)
+        ->assertCount('lineas', 3);
+
+    $keys = array_keys($component->get('lineas'));
+
+    // Borra dos de las tres líneas por su clave; la que queda debe conservar su valor.
+    $component->call('eliminarLinea', $keys[2])
+        ->call('eliminarLinea', $keys[1])
+        ->assertCount('lineas', 1)
         ->set('descripcion', 'Corregida')
-        ->set('lineas.0.descripcion', 'Único ítem')
-        ->set('lineas.0.cantidad', 2)
-        ->set('lineas.0.valor_unitario', 5000)
+        ->set('lineas.'.$keys[0].'.descripcion', 'Único ítem')
+        ->set('lineas.'.$keys[0].'.cantidad', 2)
+        ->set('lineas.'.$keys[0].'.valor_unitario', 5000)
         ->call('guardar')
         ->assertHasNoErrors();
 
@@ -131,13 +127,10 @@ test('requires descripcion and at least one linea with values', function () {
     $this->actingAs($user);
 
     Volt::test('gestion.cotizaciones.ampliaciones', ['cotizacion' => $cotizacion])
-        ->call('prepararNueva')
         ->set('descripcion', '')
-        ->set('lineas.0.descripcion', '')
-        ->set('lineas.0.cantidad', '')
-        ->set('lineas.0.valor_unitario', '')
+        ->set('lineas', ['a' => ['descripcion' => '', 'unidad' => 'UN', 'cantidad' => '', 'valor_unitario' => '']])
         ->call('guardar')
-        ->assertHasErrors(['descripcion', 'lineas.0.descripcion', 'lineas.0.cantidad', 'lineas.0.valor_unitario']);
+        ->assertHasErrors(['descripcion', 'lineas.a.descripcion', 'lineas.a.cantidad', 'lineas.a.valor_unitario']);
 });
 
 test('eliminarLinea keeps at least one line', function () {
@@ -146,9 +139,12 @@ test('eliminarLinea keeps at least one line', function () {
 
     $this->actingAs($user);
 
-    Volt::test('gestion.cotizaciones.ampliaciones', ['cotizacion' => $cotizacion])
-        ->call('prepararNueva')
-        ->call('eliminarLinea', 0)
+    $component = Volt::test('gestion.cotizaciones.ampliaciones', ['cotizacion' => $cotizacion])
+        ->call('prepararNueva');
+
+    $key = array_key_first($component->get('lineas'));
+
+    $component->call('eliminarLinea', $key)
         ->assertCount('lineas', 1);
 });
 
@@ -209,11 +205,8 @@ test('la cantidad de una linea de ampliacion debe ser entera', function () {
     $this->actingAs($user);
 
     Volt::test('gestion.cotizaciones.ampliaciones', ['cotizacion' => $cotizacion])
-        ->call('prepararNueva')
         ->set('descripcion', 'Adicional')
-        ->set('lineas.0.descripcion', 'Ítem')
-        ->set('lineas.0.cantidad', 1.5)
-        ->set('lineas.0.valor_unitario', 1000)
+        ->set('lineas', ['a' => ['descripcion' => 'Ítem', 'unidad' => 'UN', 'cantidad' => 1.5, 'valor_unitario' => 1000]])
         ->call('guardar')
-        ->assertHasErrors(['lineas.0.cantidad']);
+        ->assertHasErrors(['lineas.a.cantidad']);
 });

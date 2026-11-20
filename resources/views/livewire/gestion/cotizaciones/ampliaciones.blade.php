@@ -14,8 +14,10 @@ state([
     'editandoId' => null,
     'fecha' => fn () => today()->toDateString(),
     'descripcion' => '',
+    // Indexadas por clave estable (uuid): al borrar una línea las demás conservan su clave
+    // y Livewire no reasigna valores a la fila equivocada.
     'lineas' => fn () => [
-        ['_key' => (string) Str::uuid(), 'descripcion' => '', 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0],
+        (string) Str::uuid() => ['descripcion' => '', 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0],
     ],
 ]);
 
@@ -37,13 +39,13 @@ $resumen = computed(function () {
     ];
 });
 
-$lineaEnBlanco = fn () => ['_key' => (string) Str::uuid(), 'descripcion' => '', 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0];
+$lineaEnBlanco = fn () => ['descripcion' => '', 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0];
 
 $prepararNueva = function () use ($lineaEnBlanco) {
     $this->editandoId = null;
     $this->fecha = today()->toDateString();
     $this->descripcion = '';
-    $this->lineas = [$lineaEnBlanco()];
+    $this->lineas = [(string) Str::uuid() => $lineaEnBlanco()];
     $this->mostrarForm = true;
     $this->resetValidation();
 };
@@ -54,12 +56,13 @@ $editar = function (int $id) {
     $this->editandoId = $ampliacion->id;
     $this->fecha = $ampliacion->fecha->toDateString();
     $this->descripcion = $ampliacion->descripcion;
-    $this->lineas = $ampliacion->lineas->map(fn ($linea) => [
-        '_key' => (string) Str::uuid(),
-        'descripcion' => $linea->descripcion,
-        'unidad' => $linea->unidad,
-        'cantidad' => (float) $linea->cantidad,
-        'valor_unitario' => (float) $linea->valor_unitario,
+    $this->lineas = $ampliacion->lineas->mapWithKeys(fn ($linea) => [
+        (string) Str::uuid() => [
+            'descripcion' => $linea->descripcion,
+            'unidad' => $linea->unidad,
+            'cantidad' => (float) $linea->cantidad,
+            'valor_unitario' => (float) $linea->valor_unitario,
+        ],
     ])->all();
     $this->mostrarForm = true;
     $this->resetValidation();
@@ -69,21 +72,20 @@ $cancelar = function () use ($lineaEnBlanco) {
     $this->mostrarForm = false;
     $this->editandoId = null;
     $this->descripcion = '';
-    $this->lineas = [$lineaEnBlanco()];
+    $this->lineas = [(string) Str::uuid() => $lineaEnBlanco()];
     $this->resetValidation();
 };
 
 $agregarLinea = function () use ($lineaEnBlanco) {
-    $this->lineas[] = $lineaEnBlanco();
+    $this->lineas[(string) Str::uuid()] = $lineaEnBlanco();
 };
 
-$eliminarLinea = function (int $indice) {
+$eliminarLinea = function (string $key) {
     if (count($this->lineas) <= 1) {
         return;
     }
 
-    unset($this->lineas[$indice]);
-    $this->lineas = array_values($this->lineas);
+    unset($this->lineas[$key]);
 };
 
 $guardar = function () {
@@ -105,14 +107,15 @@ $guardar = function () {
     $ampliacion->save();
 
     $ampliacion->lineas()->delete();
-    foreach (array_values($datos['lineas']) as $indice => $linea) {
+    $orden = 0;
+    foreach ($datos['lineas'] as $linea) {
         $ampliacion->lineas()->create([
             'descripcion' => $linea['descripcion'],
             'unidad' => $linea['unidad'],
             'cantidad' => $linea['cantidad'],
             'valor_unitario' => $linea['valor_unitario'],
             'subtotal_calculado' => (float) $linea['cantidad'] * (float) $linea['valor_unitario'],
-            'orden' => $indice,
+            'orden' => $orden++,
         ]);
     }
 
@@ -242,31 +245,31 @@ $eliminar = function (int $id) {
             <div class="mt-4">
                 <x-input-label value="Líneas de la ampliación" />
                 <div class="mt-2 space-y-3">
-                    @foreach ($lineas as $indice => $linea)
-                        <div class="rounded-md border border-gray-200 bg-white p-3" wire:key="ampl-linea-{{ $linea['_key'] ?? $indice }}">
+                    @foreach ($lineas as $key => $linea)
+                        <div class="rounded-md border border-gray-200 bg-white p-3" wire:key="ampl-linea-{{ $key }}">
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
                                 <div class="sm:flex-1">
-                                    <input type="text" wire:model="lineas.{{ $indice }}.descripcion"
+                                    <input type="text" wire:model="lineas.{{ $key }}.descripcion"
                                         placeholder="Producto o servicio"
                                         class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                    <x-input-error :messages="$errors->get('lineas.'.$indice.'.descripcion')" class="mt-1" />
+                                    <x-input-error :messages="$errors->get('lineas.'.$key.'.descripcion')" class="mt-1" />
                                 </div>
                                 <div class="sm:w-20">
-                                    <input type="text" wire:model="lineas.{{ $indice }}.unidad" placeholder="Unidad"
+                                    <input type="text" wire:model="lineas.{{ $key }}.unidad" placeholder="Unidad"
                                         class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                    <x-input-error :messages="$errors->get('lineas.'.$indice.'.unidad')" class="mt-1" />
+                                    <x-input-error :messages="$errors->get('lineas.'.$key.'.unidad')" class="mt-1" />
                                 </div>
                                 <div class="sm:w-24">
-                                    <input type="number" step="1" min="1" inputmode="numeric" wire:model.live="lineas.{{ $indice }}.cantidad"
+                                    <input type="number" step="1" min="1" inputmode="numeric" wire:model.live="lineas.{{ $key }}.cantidad"
                                         placeholder="Cantidad"
                                         class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                    <x-input-error :messages="$errors->get('lineas.'.$indice.'.cantidad')" class="mt-1" />
+                                    <x-input-error :messages="$errors->get('lineas.'.$key.'.cantidad')" class="mt-1" />
                                 </div>
                                 <div class="sm:w-36">
-                                    <input type="number" step="0.01" min="0" wire:model.live="lineas.{{ $indice }}.valor_unitario"
+                                    <input type="number" step="0.01" min="0" wire:model.live="lineas.{{ $key }}.valor_unitario"
                                         placeholder="Valor unitario"
                                         class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                    <x-input-error :messages="$errors->get('lineas.'.$indice.'.valor_unitario')" class="mt-1" />
+                                    <x-input-error :messages="$errors->get('lineas.'.$key.'.valor_unitario')" class="mt-1" />
                                 </div>
                                 <div class="flex items-center justify-end sm:w-28 sm:justify-center sm:pt-2">
                                     <span class="text-sm text-gray-500">
@@ -274,7 +277,7 @@ $eliminar = function (int $id) {
                                     </span>
                                 </div>
                                 <div class="flex justify-end sm:pt-1.5">
-                                    <button type="button" wire:click="eliminarLinea({{ $indice }})"
+                                    <button type="button" wire:click="eliminarLinea('{{ $key }}')"
                                         class="text-sm text-red-600 hover:text-red-500">Quitar</button>
                                 </div>
                             </div>

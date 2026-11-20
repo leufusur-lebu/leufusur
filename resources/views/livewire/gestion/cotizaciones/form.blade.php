@@ -21,8 +21,10 @@ state([
     'descuento_porcentaje' => 0,
     'id_mercado_publico' => '',
     'nuevoAdjunto' => null,
+    // Indexadas por una clave estable (uuid) en vez de índice numérico: al borrar una línea
+    // las demás conservan su clave y Livewire no reasigna valores a la fila equivocada.
     'lineas' => fn () => [
-        ['_key' => (string) Str::uuid(), 'descripcion' => '', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0],
+        (string) Str::uuid() => ['descripcion' => '', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0],
     ],
     'borradorRecuperado' => false,
     'borradorFecha' => null,
@@ -45,14 +47,15 @@ mount(function (?Cotizacion $cotizacion = null) {
         $this->descuento_porcentaje = (float) $cotizacion->descuento_porcentaje;
         $this->id_mercado_publico = $cotizacion->id_mercado_publico ?? '';
 
-        $this->lineas = $cotizacion->lineas->map(fn ($linea) => [
-            '_key' => (string) Str::uuid(),
-            'descripcion' => $linea->descripcion,
-            'detalle_extendido' => $linea->detalle_extendido ?? '',
-            'mostrar_detalle' => filled($linea->detalle_extendido),
-            'unidad' => $linea->unidad,
-            'cantidad' => (float) $linea->cantidad,
-            'valor_unitario' => (float) $linea->valor_unitario,
+        $this->lineas = $cotizacion->lineas->mapWithKeys(fn ($linea) => [
+            (string) Str::uuid() => [
+                'descripcion' => $linea->descripcion,
+                'detalle_extendido' => $linea->detalle_extendido ?? '',
+                'mostrar_detalle' => filled($linea->detalle_extendido),
+                'unidad' => $linea->unidad,
+                'cantidad' => (float) $linea->cantidad,
+                'valor_unitario' => (float) $linea->valor_unitario,
+            ],
         ])->all();
     }
 
@@ -106,16 +109,15 @@ $quitarCliente = function () {
 };
 
 $agregarLinea = function () {
-    $this->lineas[] = ['_key' => (string) Str::uuid(), 'descripcion' => '', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0];
+    $this->lineas[(string) Str::uuid()] = ['descripcion' => '', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 0];
 };
 
-$eliminarLinea = function (int $indice) {
+$eliminarLinea = function (string $key) {
     if (count($this->lineas) <= 1) {
         return;
     }
 
-    unset($this->lineas[$indice]);
-    $this->lineas = array_values($this->lineas);
+    unset($this->lineas[$key]);
 };
 
 $resumen = computed(function () {
@@ -228,7 +230,8 @@ $guardar = function () {
         ]);
     }
 
-    foreach ($datos['lineas'] as $indice => $linea) {
+    $orden = 0;
+    foreach ($datos['lineas'] as $linea) {
         $detalleExtendido = trim((string) ($linea['detalle_extendido'] ?? ''));
 
         if ($detalleExtendido !== '') {
@@ -248,7 +251,7 @@ $guardar = function () {
             'cantidad' => $linea['cantidad'],
             'valor_unitario' => $linea['valor_unitario'],
             'subtotal_calculado' => $linea['cantidad'] * $linea['valor_unitario'],
-            'orden' => $indice,
+            'orden' => $orden++,
         ]);
     }
 
@@ -373,36 +376,36 @@ $guardar = function () {
                             <x-input-label value="Líneas de detalle" />
 
                             <div class="mt-2 space-y-3">
-                                @foreach ($lineas as $indice => $linea)
-                                    <div class="rounded-md border border-gray-200 p-3" wire:key="linea-{{ $linea['_key'] ?? $indice }}">
+                                @foreach ($lineas as $key => $linea)
+                                    <div class="rounded-md border border-gray-200 p-3" wire:key="linea-{{ $key }}">
                                         <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
                                             <div class="sm:flex-1">
-                                                <input type="text" wire:model="lineas.{{ $indice }}.descripcion"
+                                                <input type="text" wire:model="lineas.{{ $key }}.descripcion"
                                                     placeholder="Nombre del producto o servicio"
                                                     class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                                <x-input-error :messages="$errors->get('lineas.'.$indice.'.descripcion')" class="mt-1" />
+                                                <x-input-error :messages="$errors->get('lineas.'.$key.'.descripcion')" class="mt-1" />
                                                 <label class="mt-1 flex items-center gap-1.5 text-xs text-gray-600">
-                                                    <input type="checkbox" wire:model.live="lineas.{{ $indice }}.mostrar_detalle"
+                                                    <input type="checkbox" wire:model.live="lineas.{{ $key }}.mostrar_detalle"
                                                         class="rounded border-gray-300 text-teal-600 shadow-sm focus:ring-teal-500">
                                                     Agregar detalle
                                                 </label>
                                             </div>
                                             <div class="sm:w-20">
-                                                <input type="text" wire:model="lineas.{{ $indice }}.unidad" placeholder="Unidad"
+                                                <input type="text" wire:model="lineas.{{ $key }}.unidad" placeholder="Unidad"
                                                     class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                                <x-input-error :messages="$errors->get('lineas.'.$indice.'.unidad')" class="mt-1" />
+                                                <x-input-error :messages="$errors->get('lineas.'.$key.'.unidad')" class="mt-1" />
                                             </div>
                                             <div class="sm:w-24">
                                                 <input type="number" step="1" min="1" inputmode="numeric"
-                                                    wire:model.live="lineas.{{ $indice }}.cantidad" placeholder="Cantidad"
+                                                    wire:model.live="lineas.{{ $key }}.cantidad" placeholder="Cantidad"
                                                     class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                                <x-input-error :messages="$errors->get('lineas.'.$indice.'.cantidad')" class="mt-1" />
+                                                <x-input-error :messages="$errors->get('lineas.'.$key.'.cantidad')" class="mt-1" />
                                             </div>
                                             <div class="sm:w-36">
                                                 <input type="number" step="0.01" min="0"
-                                                    wire:model.live="lineas.{{ $indice }}.valor_unitario" placeholder="Valor unitario"
+                                                    wire:model.live="lineas.{{ $key }}.valor_unitario" placeholder="Valor unitario"
                                                     class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                                <x-input-error :messages="$errors->get('lineas.'.$indice.'.valor_unitario')" class="mt-1" />
+                                                <x-input-error :messages="$errors->get('lineas.'.$key.'.valor_unitario')" class="mt-1" />
                                             </div>
                                             <div class="flex items-center justify-end sm:w-28 sm:justify-center sm:pt-2">
                                                 <span class="text-sm text-gray-500">
@@ -410,7 +413,7 @@ $guardar = function () {
                                                 </span>
                                             </div>
                                             <div class="flex justify-end sm:pt-1.5">
-                                                <button type="button" wire:click="eliminarLinea({{ $indice }})"
+                                                <button type="button" wire:click="eliminarLinea('{{ $key }}')"
                                                     class="text-sm text-red-600 hover:text-red-500">
                                                     Quitar
                                                 </button>
@@ -419,12 +422,12 @@ $guardar = function () {
 
                                         @if ($linea['mostrar_detalle'] ?? false)
                                             <div class="mt-3" wire:ignore>
-                                                <input type="hidden" id="trix-input-{{ $linea['_key'] ?? $indice }}"
+                                                <input type="hidden" id="trix-input-{{ $key }}"
                                                     value="{{ $linea['detalle_extendido'] ?? '' }}">
-                                                <trix-editor input="trix-input-{{ $linea['_key'] ?? $indice }}"
-                                                    x-on:trix-change="$wire.set('lineas.{{ $indice }}.detalle_extendido', $event.target.value)"></trix-editor>
+                                                <trix-editor input="trix-input-{{ $key }}"
+                                                    x-on:trix-change="$wire.set('lineas.{{ $key }}.detalle_extendido', $event.target.value)"></trix-editor>
                                             </div>
-                                            <x-input-error :messages="$errors->get('lineas.'.$indice.'.detalle_extendido')" class="mt-1" />
+                                            <x-input-error :messages="$errors->get('lineas.'.$key.'.detalle_extendido')" class="mt-1" />
                                         @endif
                                     </div>
                                 @endforeach

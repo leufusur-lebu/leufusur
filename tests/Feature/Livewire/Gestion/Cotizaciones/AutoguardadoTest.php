@@ -16,8 +16,7 @@ test('el autoguardado crea un borrador para una cotizacion nueva', function () {
     Volt::test('gestion.cotizaciones.form')
         ->set('cliente_id', $cliente->id)
         ->set('descripcion', 'Trabajo en curso')
-        ->set('lineas.0.descripcion', 'Ítem a medio escribir')
-        ->set('lineas.0.valor_unitario', 1000)
+        ->set('lineas', ['a' => ['descripcion' => 'Ítem a medio escribir', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 1000]])
         ->call('guardarBorrador');
 
     $borrador = CotizacionBorrador::where('user_id', $user->id)->whereNull('cotizacion_id')->first();
@@ -25,7 +24,7 @@ test('el autoguardado crea un borrador para una cotizacion nueva', function () {
     expect($borrador)->not->toBeNull();
     expect($borrador->payload['descripcion'])->toBe('Trabajo en curso');
     expect($borrador->payload['cliente_id'])->toBe($cliente->id);
-    expect($borrador->payload['lineas'][0]['descripcion'])->toBe('Ítem a medio escribir');
+    expect($borrador->payload['lineas']['a']['descripcion'])->toBe('Ítem a medio escribir');
 });
 
 test('el autoguardado no crea un borrador si no hay contenido', function () {
@@ -77,9 +76,7 @@ test('guardar la cotizacion elimina el borrador', function () {
         ->set('cliente_id', $cliente->id)
         ->set('descripcion', 'Cotización final')
         ->set('fecha_vencimiento', today()->addDays(20)->toDateString())
-        ->set('lineas.0.descripcion', 'Cámara IP')
-        ->set('lineas.0.cantidad', 1)
-        ->set('lineas.0.valor_unitario', 100000)
+        ->set('lineas', ['a' => ['descripcion' => 'Cámara IP', 'detalle_extendido' => '', 'mostrar_detalle' => false, 'unidad' => 'UN', 'cantidad' => 1, 'valor_unitario' => 100000]])
         ->call('guardar')
         ->assertHasNoErrors();
 
