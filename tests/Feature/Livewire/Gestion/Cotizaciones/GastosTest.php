@@ -28,6 +28,21 @@ test('gastos section is visible when the cotizacion is aprobada', function () {
         ->assertSee('Agregar gasto');
 });
 
+test('the gastos table shows the descripcion column', function () {
+    $user = User::factory()->create();
+    $cotizacion = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);
+    Gasto::factory()->create([
+        'cotizacion_id' => $cotizacion->id,
+        'descripcion' => 'Compra de cámaras IP distintiva',
+    ]);
+
+    $this->actingAs($user);
+
+    Volt::test('gestion.cotizaciones.gastos', ['parent' => $cotizacion])
+        ->assertSee('Descripción')
+        ->assertSee('Compra de cámaras IP distintiva');
+});
+
 test('iva is derived from monto_neto on save when left at zero', function () {
     $user = User::factory()->create();
     $cotizacion = Cotizacion::factory()->create(['estado' => EstadoCotizacion::Aprobada]);

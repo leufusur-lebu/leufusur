@@ -179,6 +179,7 @@ $eliminar = function (Gasto $gasto) {
                     <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Tipo</th>
                     <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Documento</th>
                     <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Proveedor</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Descripción</th>
                     <th class="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Total</th>
                     <th class="py-2 pl-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Acciones</th>
                 </tr>
@@ -190,6 +191,7 @@ $eliminar = function (Gasto $gasto) {
                         <td class="px-3 py-2 text-sm text-gray-500">{{ $gasto->tipo->label() }}</td>
                         <td class="px-3 py-2 text-sm text-gray-500">{{ $gasto->numero_documento }}</td>
                         <td class="px-3 py-2 text-sm text-gray-500">{{ $gasto->proveedor }}</td>
+                        <td class="px-3 py-2 text-sm text-gray-500">{{ $gasto->descripcion }}</td>
                         <td class="px-3 py-2 text-right text-sm text-gray-900">${{ number_format($gasto->total_calculado, 0, ',', '.') }}</td>
                         <td class="py-2 pl-3 text-right text-sm">
                             @if ($gasto->archivo_comprobante)
@@ -207,7 +209,7 @@ $eliminar = function (Gasto $gasto) {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="py-6 text-center text-sm text-gray-500">Aún no hay gastos registrados.</td>
+                        <td colspan="7" class="py-6 text-center text-sm text-gray-500">Aún no hay gastos registrados.</td>
                     </tr>
                 @endforelse
             </tbody>
