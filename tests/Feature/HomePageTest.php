@@ -27,5 +27,9 @@ test('la página de inicio enlaza a las redes sociales y WhatsApp', function () 
     $response = $this->get('/');
 
     $response->assertSee('https://www.facebook.com/profile.php?id=61596128236063');
-    $response->assertSee('https://wa.me/56962471305');
+    $response->assertSee('https://wa.me/56964375353');
+});
+
+test('la página de inicio usa el logo de la marca', function () {
+    $this->get('/')->assertSee('images/leufusur-horizontal.png');
 });
