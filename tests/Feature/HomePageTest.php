@@ -22,3 +22,10 @@ test('la página de inicio destaca los servicios clave', function () {
     $response->assertSee('Redes de datos');
     $response->assertSee('Mercado Público');
 });
+
+test('la página de inicio enlaza a las redes sociales y WhatsApp', function () {
+    $response = $this->get('/');
+
+    $response->assertSee('https://www.facebook.com/profile.php?id=61596128236063');
+    $response->assertSee('https://wa.me/56962471305');
+});
